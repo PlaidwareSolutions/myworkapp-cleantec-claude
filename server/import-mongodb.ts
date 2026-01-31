@@ -132,13 +132,15 @@ async function importRoles() {
   const docs = parseBsonFile(path.join(EXPORT_DIR, 'roles.bson'));
   
   for (const doc of docs) {
-    const id = convertId(doc._id);
+    // In MongoDB, _id IS the role name (e.g., "ADMIN", "CUSTOMER")
+    const roleId = doc._id.toString();
+    idMap.set(roleId, roleId); // Map to itself
     
     await db.insert(roles).values({
-      id,
-      name: doc.name || 'Unknown',
+      id: roleId,
+      name: doc.name || roleId, // Use _id as name if name not provided
       permissions: doc.permissions || {},
-      createdBy: getMappedId(doc.createdBy),
+      createdBy: doc.createdBy ? getMappedId(doc.createdBy) : null,
       createdAt: parseDate(doc.createdAt),
       updatedAt: parseDate(doc.updatedAt),
     }).onConflictDoNothing();
@@ -154,27 +156,29 @@ async function importContacts() {
   for (const doc of docs) {
     const id = convertId(doc._id);
     
-    // Extract system user data
-    let systemUser = null;
-    if (doc.systemUser && doc.systemUser.username) {
-      systemUser = {
-        active: doc.systemUser.active ?? true,
-        username: doc.systemUser.username,
-        password: doc.systemUser.password?.hash || null,
-        lastPasswordChange: parseDate(doc.systemUser.password?.lastChanged)?.toISOString() || null,
-        role: getMappedId(doc.systemUser.role) || null,
-      };
-    }
+    // Type in MongoDB is the role name which is also the role ID
+    const contactType = doc.type || 'CUSTOMER';
+    
+    // Address handling
+    const address = doc.address || {};
     
     await db.insert(contacts).values({
       id,
-      type: doc.type || 'CUSTOMER',
+      type: contactType, // This references roles.id which IS the role name
       active: doc.active ?? true,
-      systemUser,
       name: doc.name || 'Unknown',
-      address: doc.address || null,
       phone: Array.isArray(doc.phone) ? doc.phone : (doc.phone ? [doc.phone] : []),
       email: Array.isArray(doc.email) ? doc.email : (doc.email ? [doc.email] : []),
+      addressStreet: address.street || null,
+      addressCity: address.city || null,
+      addressState: address.state || null,
+      addressZipCode: address.zipCode || null,
+      addressCountry: address.country || null,
+      // System user fields
+      systemUserActive: doc.systemUser?.active ?? null,
+      systemUserUsername: doc.systemUser?.username || null,
+      systemUserPasswordHash: doc.systemUser?.password?.hash || null,
+      systemUserPasswordLastChanged: parseDate(doc.systemUser?.password?.lastChanged),
       createdBy: getMappedId(doc.createdBy),
       createdAt: parseDate(doc.createdAt),
       updatedAt: parseDate(doc.updatedAt),
@@ -291,15 +295,23 @@ async function importOrders() {
   
   for (const doc of docs) {
     const id = convertId(doc._id);
+    const customerId = getMappedId(doc.customer);
+    const createdBy = getMappedId(doc.createdBy) || SYSTEM_ID;
+    
+    // Skip if no customer
+    if (!customerId) {
+      console.log(`  Skipping order ${doc.referenceId || doc._id} - no customer`);
+      continue;
+    }
     
     await db.insert(orders).values({
       id,
       referenceId: doc.referenceId || `ORD-${Date.now()}`,
-      orderType: doc.orderType || 'OUTBOUND',
-      customerId: getMappedId(doc.customer),
+      type: doc.orderType || 'OUTBOUND',
+      customerId,
       status: doc.status || 'INITIATED',
-      notes: doc.notes || null,
-      createdBy: getMappedId(doc.createdBy),
+      carrierId: getMappedId(doc.carrier),
+      createdBy,
       createdAt: parseDate(doc.createdAt),
       updatedAt: parseDate(doc.updatedAt),
     }).onConflictDoNothing();
@@ -307,12 +319,14 @@ async function importOrders() {
     // Import order items
     if (doc.items && Array.isArray(doc.items)) {
       for (const item of doc.items) {
+        const productId = getMappedId(item.product);
+        if (!productId) continue;
+        
         await db.insert(orderItems).values({
           id: convertId(item._id),
           orderId: id,
-          productId: getMappedId(item.product),
-          quantity: item.quantity || 0,
-          createdAt: parseDate(doc.createdAt),
+          productId,
+          requiredQuantity: item.quantity || 0,
         }).onConflictDoNothing();
       }
     }
@@ -325,20 +339,26 @@ async function importOrderEvents() {
   console.log('Importing order events...');
   const docs = parseBsonFile(path.join(EXPORT_DIR, 'orderevents.bson'));
   
+  let imported = 0;
   for (const doc of docs) {
     const id = convertId(doc._id);
+    const orderId = getMappedId(doc.order);
+    
+    // Skip if missing required order
+    if (!orderId) continue;
     
     await db.insert(orderEvents).values({
       id,
-      orderId: getMappedId(doc.order),
+      orderId,
       status: doc.status || 'INITIATED',
       comment: doc.comment || null,
       createdBy: getMappedId(doc.createdBy),
       createdAt: parseDate(doc.createdAt),
     }).onConflictDoNothing();
+    imported++;
   }
   
-  console.log(`Imported ${docs.length} order events`);
+  console.log(`Imported ${imported} order events`);
 }
 
 async function importAssetEvents() {
@@ -351,31 +371,38 @@ async function importAssetEvents() {
   
   for (let i = 0; i < docs.length; i += batchSize) {
     const batch = docs.slice(i, i + batchSize);
-    const values = batch.map(doc => {
-      const id = convertId(doc._id);
-      
-      return {
-        id,
-        assetId: getMappedId(doc.asset),
-        state: doc.state || 'AVAILABLE',
-        process: doc.process || null,
-        comment: doc.comment || null,
-        orderId: getMappedId(doc.outboundOrder) || getMappedId(doc.inboundOrder),
-        shipmentId: getMappedId(doc.shipment),
-        createdBy: getMappedId(doc.createdBy),
-        createdAt: parseDate(doc.createdAt),
-      };
-    });
+    const values = batch
+      .filter(doc => {
+        const assetId = getMappedId(doc.asset);
+        return assetId !== null; // Skip if no valid asset reference
+      })
+      .map(doc => {
+        const id = convertId(doc._id);
+        
+        return {
+          id,
+          assetId: getMappedId(doc.asset)!,
+          state: doc.state || 'ASSIGNED',
+          process: doc.process || 'SHIPPING',
+          comment: doc.comment || null,
+          outboundOrderId: getMappedId(doc.outboundOrder) || getMappedId(doc.inboundOrder),
+          shipmentId: getMappedId(doc.shipment),
+          createdBy: getMappedId(doc.createdBy),
+          createdAt: parseDate(doc.createdAt),
+        };
+      });
     
-    await db.insert(assetEvents).values(values).onConflictDoNothing();
-    imported += batch.length;
+    if (values.length > 0) {
+      await db.insert(assetEvents).values(values).onConflictDoNothing();
+    }
+    imported += values.length;
     
     if (imported % 1000 === 0) {
-      console.log(`  Imported ${imported}/${docs.length} asset events...`);
+      console.log(`  Imported ${imported} asset events...`);
     }
   }
   
-  console.log(`Imported ${docs.length} asset events`);
+  console.log(`Imported ${imported} asset events`);
 }
 
 async function importBols() {
@@ -384,12 +411,20 @@ async function importBols() {
   
   for (const doc of docs) {
     const id = convertId(doc._id);
+    const carrierId = getMappedId(doc.carrier);
+    const orderId = getMappedId(doc.order);
+    
+    // Skip if missing required fields
+    if (!carrierId || !orderId) {
+      console.log(`  Skipping BOL ${doc.referenceId || doc._id} - missing carrier or order`);
+      continue;
+    }
     
     await db.insert(bols).values({
       id,
       referenceId: doc.referenceId || `BOL-${Date.now()}`,
-      carrierId: getMappedId(doc.carrier),
-      orderId: getMappedId(doc.order),
+      carrierId,
+      orderId,
       orderType: doc.orderType || 'OUTBOUND',
       createdBy: getMappedId(doc.createdBy),
       createdAt: parseDate(doc.createdAt),
@@ -399,10 +434,13 @@ async function importBols() {
     // Import BOL items
     if (doc.items && Array.isArray(doc.items)) {
       for (const item of doc.items) {
+        const productId = getMappedId(item.product);
+        if (!productId) continue;
+        
         await db.insert(bolItems).values({
           id: convertId(item._id),
           bolId: id,
-          productId: getMappedId(item.product),
+          productId,
           quantity: item.quantity || 0,
         }).onConflictDoNothing();
       }
@@ -430,14 +468,22 @@ async function importShipments() {
   
   for (const doc of docs) {
     const id = convertId(doc._id);
+    const carrierId = getMappedId(doc.carrier);
+    
+    // Skip if missing required carrier
+    if (!carrierId) {
+      console.log(`  Skipping shipment ${doc.referenceId || doc._id} - missing carrier`);
+      continue;
+    }
     
     await db.insert(shipments).values({
       id,
       referenceId: doc.referenceId || `SHIP-${Date.now()}`,
-      carrierId: getMappedId(doc.carrier),
+      carrierId,
       orderType: doc.orderType || 'OUTBOUND',
       shipmentDate: parseDate(doc.shipmentDate),
-      driver: doc.driver || null,
+      driverName: doc.driver?.name || null,
+      driverDl: doc.driver?.dl || null,
       createdBy: getMappedId(doc.createdBy),
       createdAt: parseDate(doc.createdAt),
       updatedAt: parseDate(doc.updatedAt),
