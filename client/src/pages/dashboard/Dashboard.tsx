@@ -1,7 +1,9 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { statsApi, ordersApi } from "@/lib/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -12,10 +14,17 @@ import {
   Clock,
   AlertCircle,
   TrendingUp,
+  Plus,
+  Users,
+  Tags,
+  FileText,
+  Search,
+  Cpu,
 } from "lucide-react";
 
 export default function Dashboard() {
   const { user, hasPermission } = useAuth();
+  const [, setLocation] = useLocation();
 
   const { data: assetStats, isLoading: assetLoading } = useQuery<any>({
     queryKey: ["/api/stats/asset/status"],
@@ -47,6 +56,84 @@ export default function Dashboard() {
           Here's what's happening with your assets and orders today.
         </p>
       </div>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Quick Actions</CardTitle>
+          <CardDescription>Common tasks and shortcuts</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-3">
+            {hasPermission("Create") && (
+              <>
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  onClick={() => setLocation("/processes/orders/create")}
+                  data-testid="button-quick-create-order"
+                >
+                  <Plus className="h-4 w-4" />
+                  New Order
+                </Button>
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  onClick={() => setLocation("/admin/contacts")}
+                  data-testid="button-quick-add-contact"
+                >
+                  <Users className="h-4 w-4" />
+                  Add Contact
+                </Button>
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  onClick={() => setLocation("/inventory/products")}
+                  data-testid="button-quick-add-product"
+                >
+                  <Package className="h-4 w-4" />
+                  Add Product
+                </Button>
+              </>
+            )}
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => setLocation("/processes/orders")}
+              data-testid="button-quick-view-orders"
+            >
+              <ShoppingCart className="h-4 w-4" />
+              View Orders
+            </Button>
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => setLocation("/tracking/shipments")}
+              data-testid="button-quick-view-shipments"
+            >
+              <Truck className="h-4 w-4" />
+              View Shipments
+            </Button>
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => setLocation("/inventory/assets")}
+              data-testid="button-quick-view-assets"
+            >
+              <Cpu className="h-4 w-4" />
+              View Assets
+            </Button>
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => setLocation("/inventory/tags")}
+              data-testid="button-quick-view-tags"
+            >
+              <Tags className="h-4 w-4" />
+              View Tags
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {hasPermission("Analytics") && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
