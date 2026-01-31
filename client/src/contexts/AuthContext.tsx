@@ -60,19 +60,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [, setLocation] = useLocation();
 
   useEffect(() => {
-    const storedToken = localStorage.getItem(TOKEN_KEY);
-    const storedUser = localStorage.getItem(USER_KEY);
-    
-    if (storedToken && storedUser) {
-      try {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
-      } catch (e) {
-        localStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem(USER_KEY);
+    const validateToken = async () => {
+      const storedToken = localStorage.getItem(TOKEN_KEY);
+      const storedUser = localStorage.getItem(USER_KEY);
+      
+      if (storedToken && storedUser) {
+        try {
+          // Validate the token with the server
+          const response = await fetch("/api/user/me", {
+            headers: { Authorization: `Bearer ${storedToken}` },
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            setToken(storedToken);
+            setUser(data.data?.contact || JSON.parse(storedUser));
+            localStorage.setItem(USER_KEY, JSON.stringify(data.data?.contact || JSON.parse(storedUser)));
+          } else {
+            // Token is invalid, clear storage
+            localStorage.removeItem(TOKEN_KEY);
+            localStorage.removeItem(USER_KEY);
+          }
+        } catch (e) {
+          // Network error or parse error, try to use cached user
+          try {
+            setToken(storedToken);
+            setUser(JSON.parse(storedUser));
+          } catch {
+            localStorage.removeItem(TOKEN_KEY);
+            localStorage.removeItem(USER_KEY);
+          }
+        }
       }
-    }
-    setIsLoading(false);
+      setIsLoading(false);
+    };
+    
+    validateToken();
   }, []);
 
   const login = useCallback(async (username: string, password: string) => {
