@@ -297,7 +297,7 @@ export default function OrdersPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>{order.totalRequiredQuantity || 0}</TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex justify-end gap-1">
                           <Link href={`/processes/orders/update/${order.id}`}>
                             <Button variant="ghost" size="icon" title="View/Edit" data-testid={`button-view-${order.id}`}>
