@@ -11,16 +11,19 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Settings, Mail, Building } from "lucide-react";
+import { Loader2, Settings, Building, Package, Warehouse, MapPin } from "lucide-react";
 
 const settingsSchema = z.object({
-  companyName: z.string().min(1, "Company name is required"),
-  companyAddress: z.string().optional(),
-  companyPhone: z.string().optional(),
+  companyName: z.string().optional().or(z.literal("")),
+  companyAddress: z.string().optional().or(z.literal("")),
+  companyPhone: z.string().optional().or(z.literal("")),
   companyEmail: z.string().email().optional().or(z.literal("")),
-  orderPrefix: z.string().optional(),
-  bolPrefix: z.string().optional(),
-  shipmentPrefix: z.string().optional(),
+  orderPrefix: z.string().optional().or(z.literal("")),
+  bolPrefix: z.string().optional().or(z.literal("")),
+  shipmentPrefix: z.string().optional().or(z.literal("")),
+  binsPerPallet: z.number().optional(),
+  palletWeight: z.number().optional(),
+  binWeight: z.number().optional(),
 });
 
 type SettingsForm = z.infer<typeof settingsSchema>;
@@ -44,6 +47,9 @@ export default function SettingsPage() {
       orderPrefix: "ORD",
       bolPrefix: "BOL",
       shipmentPrefix: "SHP",
+      binsPerPallet: 48,
+      palletWeight: 50,
+      binWeight: 5,
     },
   });
 
@@ -57,6 +63,9 @@ export default function SettingsPage() {
         orderPrefix: settings.orderPrefix || "ORD",
         bolPrefix: settings.bolPrefix || "BOL",
         shipmentPrefix: settings.shipmentPrefix || "SHP",
+        binsPerPallet: settings.binsPerPallet ?? 48,
+        palletWeight: settings.palletWeight ?? 50,
+        binWeight: settings.binWeight ?? 5,
       });
     }
   }, [settings, form]);
@@ -224,6 +233,78 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                Weight & Pallet Settings
+              </CardTitle>
+              <CardDescription>
+                Configure default weights and pallet settings
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4 md:grid-cols-3">
+              <FormField
+                control={form.control}
+                name="binsPerPallet"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Bins Per Pallet</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        placeholder="48" 
+                        {...field}
+                        onChange={e => field.onChange(parseInt(e.target.value) || 0)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="palletWeight"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Pallet Weight (lbs)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        step="0.1"
+                        placeholder="50" 
+                        {...field}
+                        onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="binWeight"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Bin Weight (lbs)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        step="0.1"
+                        placeholder="5" 
+                        {...field}
+                        onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+
           <div className="flex justify-end">
             <Button type="submit" disabled={updateMutation.isPending} data-testid="button-save-settings">
               {updateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -232,6 +313,43 @@ export default function SettingsPage() {
           </div>
         </form>
       </Form>
+
+      {settings?.warehouses && settings.warehouses.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Warehouse className="h-5 w-5" />
+              Warehouses
+            </CardTitle>
+            <CardDescription>
+              Configured warehouse locations
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-2">
+              {settings.warehouses.map((warehouse: any, index: number) => (
+                <Card key={warehouse._id || index} className="bg-muted/30">
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
+                      <div>
+                        <h4 className="font-semibold">{warehouse.name}</h4>
+                        {warehouse.address && (
+                          <p className="text-sm text-muted-foreground">
+                            {warehouse.address.street}<br />
+                            {warehouse.address.city}, {warehouse.address.state} {warehouse.address.zipCode}<br />
+                            {warehouse.address.country}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

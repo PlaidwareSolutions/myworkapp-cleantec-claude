@@ -272,6 +272,13 @@ export type ShipmentBol = typeof shipmentBols.$inferSelect;
 // Settings table
 export const settings = pgTable("settings", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  companyName: varchar("company_name", { length: 255 }),
+  companyAddress: text("company_address"),
+  companyPhone: varchar("company_phone", { length: 50 }),
+  companyEmail: varchar("company_email", { length: 255 }),
+  orderPrefix: varchar("order_prefix", { length: 20 }).default("ORD"),
+  bolPrefix: varchar("bol_prefix", { length: 20 }).default("BOL"),
+  shipmentPrefix: varchar("shipment_prefix", { length: 20 }).default("SHP"),
   binsPerPallet: integer("bins_per_pallet").default(48),
   palletWeight: real("pallet_weight").default(50),
   binWeight: real("bin_weight").default(5),
