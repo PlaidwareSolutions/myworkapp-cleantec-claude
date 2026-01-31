@@ -99,7 +99,7 @@ export default function UpdateOrderPage() {
         trailerId: "",
         palletCount: order.palletCount || 0,
         orderWeight: order.orderWeight || 0,
-        receiverId: order.receiverId || "",
+        receiverId: order.type === "INBOUND" ? (order.receiverName || "") : (order.receiverId || ""),
         items: order.items?.map((item: any) => ({
           productId: item.productId,
           requiredQuantity: item.requiredQuantity,
@@ -277,11 +277,11 @@ export default function UpdateOrderPage() {
           </Link>
           <div>
             <h1 className="text-3xl font-bold tracking-tight">{order.referenceId}</h1>
-            <p className="text-muted-foreground">Order Details</p>
-          </div>
-          <div className="flex flex-col gap-1">
-            <Badge variant="outline" className="justify-center" data-testid="badge-type">{order.type}</Badge>
-            <Badge className={statusColors[order.status] || ""} data-testid="badge-status">{order.status}</Badge>
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">Order Details</span>
+              <Badge variant="outline" data-testid="badge-type">{order.type}</Badge>
+              <Badge className={statusColors[order.status] || ""} data-testid="badge-status">{order.status}</Badge>
+            </div>
           </div>
         </div>
         <div className="flex gap-2 flex-wrap">

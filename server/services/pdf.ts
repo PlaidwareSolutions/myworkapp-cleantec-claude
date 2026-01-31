@@ -49,7 +49,7 @@ function addFooter(doc: InstanceType<typeof PDFDocument>) {
   doc.fontSize(7).text(
     `Generated on ${new Date().toLocaleString()}`,
     50, footerY + 25,
-    { align: "center", lineBreak: false }
+    { align: "center", width: 495, lineBreak: false }
   );
 }
 
