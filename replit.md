@@ -113,6 +113,27 @@ A comprehensive PostgreSQL-based API for asset tracking, order management, and l
 npx tsx server/seed.ts
 ```
 
+## MongoDB Import Script
+The database can be populated from MongoDB BSON exports using:
+```bash
+npx tsx server/import-mongodb.ts
+```
+
+This script:
+- Parses BSON files from `mongodb_export/myworkapp/` directory
+- Converts MongoDB ObjectIds to PostgreSQL UUIDs
+- Handles foreign key relationships in correct order
+- Processes 37,504 tags/assets in ~25 seconds
+- Sets up admin user (username: admin, password: admin123)
+
+**Current imported data:**
+- 8 roles, 15 contacts, 1 product
+- 37,504 tags and assets
+- 26 orders, 6 BOLs, 6 shipments
+- 2,567 asset events
+
+**Other login usernames:** amcdaniel, cceniceros, sgonzalez, kassif, christenr (password: admin123)
+
 ## Project Structure
 ```
 server/
