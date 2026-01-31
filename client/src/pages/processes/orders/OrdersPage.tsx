@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { ordersApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/contexts/AuthContext";
@@ -34,6 +34,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function OrdersPage() {
+  const [, navigate] = useLocation();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
@@ -270,7 +271,12 @@ export default function OrdersPage() {
                 </TableHeader>
                 <TableBody>
                   {filteredOrders.map((order: any) => (
-                    <TableRow key={order.id} data-testid={`row-order-${order.id}`}>
+                    <TableRow 
+                      key={order.id} 
+                      data-testid={`row-order-${order.id}`}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => navigate(`/processes/orders/${order.id}`)}
+                    >
                       <TableCell className="font-medium">{order.referenceId}</TableCell>
                       <TableCell>{order.poNumber || "-"}</TableCell>
                       <TableCell>{order.customer?.name || "-"}</TableCell>

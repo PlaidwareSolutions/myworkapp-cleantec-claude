@@ -1,6 +1,13 @@
 import PDFDocument from "pdfkit";
 import type { PDFDocument as PDFDocumentType } from "pdfkit";
-import { Order, OrderItem, Contact, Bol, BolItem, Settings } from "@shared/schema";
+import {
+  Order,
+  OrderItem,
+  Contact,
+  Bol,
+  BolItem,
+  Settings,
+} from "@shared/schema";
 import { storage } from "../storage";
 import path from "path";
 import fs from "fs";
@@ -8,8 +15,14 @@ import fs from "fs";
 const COMPANY_NAME = "CleanTech Asset Tracking";
 const COMPANY_ADDRESS = "123 Clean Street, Green City, EC 12345";
 
-const CLEANTEC_LOGO_PATH = path.join(process.cwd(), "server/assets/cleantec-logo.png");
-const MYWORKAPP_LOGO_PATH = path.join(process.cwd(), "server/assets/myworkapp-icon.png");
+const CLEANTEC_LOGO_PATH = path.join(
+  process.cwd(),
+  "server/assets/cleantec-logo.png",
+);
+const MYWORKAPP_LOGO_PATH = path.join(
+  process.cwd(),
+  "server/assets/myworkapp-icon.png",
+);
 
 function formatDate(date: Date | null | undefined): string {
   if (!date) return "N/A";
@@ -22,46 +35,59 @@ function formatDate(date: Date | null | undefined): string {
 
 function addHeader(doc: InstanceType<typeof PDFDocument>) {
   const startY = 30;
-  
+
   if (fs.existsSync(CLEANTEC_LOGO_PATH)) {
     doc.image(CLEANTEC_LOGO_PATH, 220, startY, { width: 150 });
     doc.y = startY + 60;
   } else {
-    doc.fontSize(24).font("Helvetica-Bold").text(COMPANY_NAME, 50, startY, { align: "center" });
+    doc
+      .fontSize(24)
+      .font("Helvetica-Bold")
+      .text(COMPANY_NAME, 50, startY, { align: "center" });
   }
-  
-  doc.fontSize(10).font("Helvetica").text(COMPANY_ADDRESS, 50, doc.y, { align: "center" });
+
+  doc
+    .fontSize(10)
+    .font("Helvetica")
+    .text(COMPANY_ADDRESS, 50, doc.y, { align: "center" });
   doc.moveDown();
 }
 
 function addFooter(doc: InstanceType<typeof PDFDocument>) {
   // Fixed footer position at bottom of page (A4: 842 points height)
   const footerY = 770;
-  
+
   // Left side: Powered by MyWorkApp.io with optional logo
   if (fs.existsSync(MYWORKAPP_LOGO_PATH)) {
     doc.image(MYWORKAPP_LOGO_PATH, 50, footerY - 5, { width: 20 });
     doc.fontSize(8).font("Helvetica");
-    doc.text("Powered by MyWorkApp.io", 75, footerY, { lineBreak: false, continued: false });
+    doc.text("Powered by MyWorkApp.io", 75, footerY, {
+      lineBreak: false,
+      continued: false,
+    });
   } else {
     doc.fontSize(8).font("Helvetica");
-    doc.text("Powered by MyWorkApp.io", 50, footerY, { lineBreak: false, continued: false });
+    doc.text("Powered by MyWorkApp.io", 50, footerY, {
+      lineBreak: false,
+      continued: false,
+    });
   }
-  
-  // Right side: Generated on date
+
+  // Right side: Printed on date
   doc.fontSize(8);
-  doc.text(
-    `Generated on ${new Date().toLocaleString()}`,
-    300, footerY,
-    { align: "right", width: 245, lineBreak: false, continued: false }
-  );
+  doc.text(`Printed on ${new Date().toLocaleString()}`, 300, footerY, {
+    align: "right",
+    width: 245,
+    lineBreak: false,
+    continued: false,
+  });
 }
 
 export async function generateOrderPdf(
   order: Order,
   items: OrderItem[],
   customer: Contact,
-  carrier: Contact | null
+  carrier: Contact | null,
 ): Promise<Buffer> {
   return new Promise(async (resolve, reject) => {
     try {
@@ -74,65 +100,110 @@ export async function generateOrderPdf(
 
       addHeader(doc);
 
-      doc.fontSize(18).font("Helvetica-Bold").text("ORDER CONFIRMATION", { align: "center" });
+      doc
+        .fontSize(18)
+        .font("Helvetica-Bold")
+        .text("ORDER CONFIRMATION", { align: "center" });
       doc.moveDown(1.5);
 
       doc.fontSize(12).font("Helvetica-Bold").text("Order Information");
       doc.moveDown(0.3);
       doc.fontSize(10).font("Helvetica");
-      
+
       const orderBoxY = doc.y;
       doc.rect(50, orderBoxY, 495, 85).stroke();
-      
-      doc.text(`Order Reference: ${order.referenceId || "N/A"}`, 60, orderBoxY + 10);
+
+      doc.text(
+        `Order Reference: ${order.referenceId || "N/A"}`,
+        60,
+        orderBoxY + 10,
+      );
       doc.text(`PO Number: ${order.poNumber || "N/A"}`, 60, orderBoxY + 25);
       doc.text(`Order Type: ${order.type}`, 60, orderBoxY + 40);
       doc.text(`Status: ${order.status}`, 60, orderBoxY + 55);
-      
-      doc.text(`Required Date: ${formatDate(order.requiredDate)}`, 300, orderBoxY + 10);
+
+      doc.text(
+        `Required Date: ${formatDate(order.requiredDate)}`,
+        300,
+        orderBoxY + 10,
+      );
       doc.text(`Ship Date: ${formatDate(order.shipDate)}`, 300, orderBoxY + 25);
       doc.text(`Created: ${formatDate(order.createdAt)}`, 300, orderBoxY + 40);
-      
+
       doc.y = orderBoxY + 95;
       doc.moveDown();
 
       const infoSectionY = doc.y;
-      
-      doc.fontSize(12).font("Helvetica-Bold").text("Customer Information", 50, infoSectionY);
+
+      doc
+        .fontSize(12)
+        .font("Helvetica-Bold")
+        .text("Customer Information", 50, infoSectionY);
       doc.moveDown(0.3);
       const customerBoxY = doc.y;
       doc.fontSize(10).font("Helvetica");
-      
+
       // Calculate dynamic heights based on content
       const customerEmail = customer.email?.join(", ") || "N/A";
       const customerPhone = customer.phone?.join(", ") || "N/A";
       const carrierEmail = carrier?.email?.join(", ") || "N/A";
       const carrierPhone = carrier?.phone?.join(", ") || "N/A";
-      
-      // Measure text heights
-      const customerEmailHeight = doc.heightOfString(`Email: ${customerEmail}`, { width: 210 });
-      const customerPhoneHeight = doc.heightOfString(`Phone: ${customerPhone}`, { width: 210 });
-      const carrierEmailHeight = doc.heightOfString(`Email: ${carrierEmail}`, { width: 215 });
-      const carrierPhoneHeight = doc.heightOfString(`Phone: ${carrierPhone}`, { width: 215 });
-      
-      // Calculate box height: name(15) + padding(10) + email + phone + padding(10)
-      const customerBoxHeight = 10 + 15 + customerEmailHeight + customerPhoneHeight + 10;
-      const carrierBoxHeight = 10 + 15 + carrierEmailHeight + carrierPhoneHeight + 10;
-      const maxBoxHeight = Math.max(customerBoxHeight, carrierBoxHeight, 65);
-      
-      doc.rect(50, customerBoxY, 230, maxBoxHeight).stroke();
-      doc.text(`Name: ${customer.name}`, 60, customerBoxY + 10, { width: 210, ellipsis: true });
-      doc.text(`Email: ${customerEmail}`, 60, customerBoxY + 25, { width: 210 });
-      const customerPhoneY = customerBoxY + 25 + customerEmailHeight;
-      doc.text(`Phone: ${customerPhone}`, 60, customerPhoneY, { width: 210, ellipsis: true });
 
-      doc.fontSize(12).font("Helvetica-Bold").text("Carrier Information", 310, infoSectionY);
+      // Measure text heights
+      const customerEmailHeight = doc.heightOfString(
+        `Email: ${customerEmail}`,
+        { width: 210 },
+      );
+      const customerPhoneHeight = doc.heightOfString(
+        `Phone: ${customerPhone}`,
+        { width: 210 },
+      );
+      const carrierEmailHeight = doc.heightOfString(`Email: ${carrierEmail}`, {
+        width: 215,
+      });
+      const carrierPhoneHeight = doc.heightOfString(`Phone: ${carrierPhone}`, {
+        width: 215,
+      });
+
+      // Calculate box height: name(15) + padding(10) + email + phone + padding(10)
+      const customerBoxHeight =
+        10 + 15 + customerEmailHeight + customerPhoneHeight + 10;
+      const carrierBoxHeight =
+        10 + 15 + carrierEmailHeight + carrierPhoneHeight + 10;
+      const maxBoxHeight = Math.max(customerBoxHeight, carrierBoxHeight, 65);
+
+      doc.rect(50, customerBoxY, 230, maxBoxHeight).stroke();
+      doc.text(`Name: ${customer.name}`, 60, customerBoxY + 10, {
+        width: 210,
+        ellipsis: true,
+      });
+      doc.text(`Email: ${customerEmail}`, 60, customerBoxY + 25, {
+        width: 210,
+      });
+      const customerPhoneY = customerBoxY + 25 + customerEmailHeight;
+      doc.text(`Phone: ${customerPhone}`, 60, customerPhoneY, {
+        width: 210,
+        ellipsis: true,
+      });
+
+      doc
+        .fontSize(12)
+        .font("Helvetica-Bold")
+        .text("Carrier Information", 310, infoSectionY);
       doc.fontSize(10).font("Helvetica");
       doc.rect(310, customerBoxY, 235, maxBoxHeight).stroke();
-      doc.text(`Name: ${carrier?.name || "N/A"}`, 320, customerBoxY + 10, { width: 215, ellipsis: true });
-      doc.text(`Email: ${carrierEmail}`, 320, customerBoxY + 25, { width: 215 });
+      doc.text(`Name: ${carrier?.name || "N/A"}`, 320, customerBoxY + 10, {
+        width: 215,
+        ellipsis: true,
+      });
+      doc.text(`Email: ${carrierEmail}`, 320, customerBoxY + 25, {
+        width: 215,
+      });
       const carrierPhoneY = customerBoxY + 25 + carrierEmailHeight;
-      doc.text(`Phone: ${carrierPhone}`, 320, carrierPhoneY, { width: 215, ellipsis: true });
+      doc.text(`Phone: ${carrierPhone}`, 320, carrierPhoneY, {
+        width: 215,
+        ellipsis: true,
+      });
 
       doc.y = customerBoxY + maxBoxHeight + 10;
       doc.moveDown();
@@ -147,9 +218,12 @@ export async function generateOrderPdf(
           order.receiverAddressCity,
           order.receiverAddressState,
           order.receiverAddressZipCode,
-        ].filter(Boolean).join(", ");
+        ]
+          .filter(Boolean)
+          .join(", ");
         if (cityStateZip) doc.text(cityStateZip);
-        if (order.receiverAddressCountry) doc.text(order.receiverAddressCountry);
+        if (order.receiverAddressCountry)
+          doc.text(order.receiverAddressCountry);
         doc.moveDown();
       }
 
@@ -204,7 +278,7 @@ export async function generateBolPdf(
   carrier: Contact,
   order: Order,
   customer: Contact,
-  settings: Settings | undefined
+  settings: Settings | undefined,
 ): Promise<Buffer> {
   return new Promise(async (resolve, reject) => {
     try {
@@ -217,20 +291,27 @@ export async function generateBolPdf(
 
       addHeader(doc);
 
-      doc.fontSize(18).font("Helvetica-Bold").text("BILL OF LADING", { align: "center" });
+      doc
+        .fontSize(18)
+        .font("Helvetica-Bold")
+        .text("BILL OF LADING", { align: "center" });
       doc.moveDown(1.5);
 
       doc.fontSize(12).font("Helvetica-Bold").text("BOL Information");
       doc.moveDown(0.3);
       doc.fontSize(10).font("Helvetica");
-      
+
       const bolBoxY = doc.y;
       doc.rect(50, bolBoxY, 495, 65).stroke();
-      
+
       doc.text(`BOL Reference: ${bol.referenceId || "N/A"}`, 60, bolBoxY + 10);
-      doc.text(`Order Reference: ${order.referenceId || "N/A"}`, 60, bolBoxY + 25);
+      doc.text(
+        `Order Reference: ${order.referenceId || "N/A"}`,
+        60,
+        bolBoxY + 25,
+      );
       doc.text(`PO Number: ${order.poNumber || "N/A"}`, 60, bolBoxY + 40);
-      
+
       doc.text(`Order Type: ${bol.orderType}`, 300, bolBoxY + 10);
       doc.text(`Created: ${formatDate(bol.createdAt)}`, 300, bolBoxY + 25);
 
@@ -238,11 +319,17 @@ export async function generateBolPdf(
       doc.moveDown();
 
       const warehouses = settings?.warehouses || [];
-      const shipper = warehouses[0] || { name: COMPANY_NAME, address: { street: "", city: "", state: "", zipCode: "", country: "" } };
+      const shipper = warehouses[0] || {
+        name: COMPANY_NAME,
+        address: { street: "", city: "", state: "", zipCode: "", country: "" },
+      };
 
       const addressSectionY = doc.y;
-      
-      doc.fontSize(12).font("Helvetica-Bold").text("Shipper", 50, addressSectionY);
+
+      doc
+        .fontSize(12)
+        .font("Helvetica-Bold")
+        .text("Shipper", 50, addressSectionY);
       doc.moveDown(0.3);
       const shipperBoxY = doc.y;
       doc.fontSize(10).font("Helvetica");
@@ -253,22 +340,37 @@ export async function generateBolPdf(
         shipper.address?.city,
         shipper.address?.state,
         shipper.address?.zipCode,
-      ].filter(Boolean).join(", ");
+      ]
+        .filter(Boolean)
+        .join(", ");
       doc.text(shipperCityStateZip, 60, shipperBoxY + 40);
       doc.text(shipper.address?.country || "", 60, shipperBoxY + 55);
 
-      doc.fontSize(12).font("Helvetica-Bold").text("Consignee", 310, addressSectionY);
+      doc
+        .fontSize(12)
+        .font("Helvetica-Bold")
+        .text("Consignee", 310, addressSectionY);
       doc.fontSize(10).font("Helvetica");
       doc.rect(310, shipperBoxY, 235, 75).stroke();
       doc.text(order.receiverName || customer.name, 320, shipperBoxY + 10);
-      doc.text(order.receiverAddressStreet || customer.addressStreet || "", 320, shipperBoxY + 25);
+      doc.text(
+        order.receiverAddressStreet || customer.addressStreet || "",
+        320,
+        shipperBoxY + 25,
+      );
       const consigneeCityStateZip = [
         order.receiverAddressCity || customer.addressCity,
         order.receiverAddressState || customer.addressState,
         order.receiverAddressZipCode || customer.addressZipCode,
-      ].filter(Boolean).join(", ");
+      ]
+        .filter(Boolean)
+        .join(", ");
       doc.text(consigneeCityStateZip, 320, shipperBoxY + 40);
-      doc.text(order.receiverAddressCountry || customer.addressCountry || "", 320, shipperBoxY + 55);
+      doc.text(
+        order.receiverAddressCountry || customer.addressCountry || "",
+        320,
+        shipperBoxY + 55,
+      );
 
       doc.y = shipperBoxY + 85;
       doc.moveDown();
@@ -301,7 +403,8 @@ export async function generateBolPdf(
 
       for (const item of items) {
         const product = await storage.getProductById(item.productId);
-        const itemWeight = (item.quantity || 0) * ((product?.weight || 0) + binWeight);
+        const itemWeight =
+          (item.quantity || 0) * ((product?.weight || 0) + binWeight);
         doc.text(product?.name || item.productId, tableLeft + 10, rowY);
         doc.text(String(item.quantity || 0), tableLeft + 320, rowY);
         doc.text(`${itemWeight.toFixed(2)} lbs`, tableLeft + 420, rowY);
@@ -322,17 +425,31 @@ export async function generateBolPdf(
 
       doc.fontSize(10).font("Helvetica-Bold").text("Acknowledgment");
       doc.moveDown(0.3);
-      doc.font("Helvetica").text(
-        "Received the above listed goods in apparent good order, except as noted."
-      );
+      doc
+        .font("Helvetica")
+        .text(
+          "Received the above listed goods in apparent good order, except as noted.",
+        );
       doc.moveDown(1.5);
 
       const signatureY = doc.y;
-      doc.text("Shipper Signature: ____________________________", 50, signatureY);
+      doc.text(
+        "Shipper Signature: ____________________________",
+        50,
+        signatureY,
+      );
       doc.text("Date: ______________", 380, signatureY);
-      doc.text("Consignee Signature: ____________________________", 50, signatureY + 25);
+      doc.text(
+        "Consignee Signature: ____________________________",
+        50,
+        signatureY + 25,
+      );
       doc.text("Date: ______________", 380, signatureY + 25);
-      doc.text("Driver Signature: ____________________________", 50, signatureY + 50);
+      doc.text(
+        "Driver Signature: ____________________________",
+        50,
+        signatureY + 50,
+      );
       doc.text("Date: ______________", 380, signatureY + 50);
 
       addFooter(doc);
