@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"}],"uuid":"b3f488ca8c2c4e1e92b6aee14b0f9932","collectionName":"hierarchynodes","type":"collection"}
