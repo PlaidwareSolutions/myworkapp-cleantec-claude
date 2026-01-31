@@ -36,28 +36,24 @@ function addHeader(doc: InstanceType<typeof PDFDocument>) {
 
 function addFooter(doc: InstanceType<typeof PDFDocument>) {
   // Fixed footer position at bottom of page (A4: 842 points height)
-  const footerY = 760;
+  const footerY = 770;
   
-  // Save current page number to ensure we draw on correct page
-  const currentPage = doc.bufferedPageRange().count;
-  
-  // Draw footer elements using absolute positioning without triggering new pages
+  // Left side: Powered by MyWorkApp.io with optional logo
   if (fs.existsSync(MYWORKAPP_LOGO_PATH)) {
-    doc.image(MYWORKAPP_LOGO_PATH, 260, footerY, { width: 30 });
-    // Position text manually without using doc.text flow
+    doc.image(MYWORKAPP_LOGO_PATH, 50, footerY - 5, { width: 20 });
     doc.fontSize(8).font("Helvetica");
-    doc.text("Powered by MyWorkApp.io", 295, footerY + 8, { lineBreak: false, continued: false });
+    doc.text("Powered by MyWorkApp.io", 75, footerY, { lineBreak: false, continued: false });
   } else {
     doc.fontSize(8).font("Helvetica");
-    doc.text("Powered by MyWorkApp.io", 50, footerY, { align: "center", width: 495, lineBreak: false, continued: false });
+    doc.text("Powered by MyWorkApp.io", 50, footerY, { lineBreak: false, continued: false });
   }
   
-  // Write generated date centered
-  doc.fontSize(7);
+  // Right side: Generated on date
+  doc.fontSize(8);
   doc.text(
     `Generated on ${new Date().toLocaleString()}`,
-    50, footerY + 25,
-    { align: "center", width: 495, lineBreak: false, continued: false }
+    300, footerY,
+    { align: "right", width: 245, lineBreak: false, continued: false }
   );
 }
 
