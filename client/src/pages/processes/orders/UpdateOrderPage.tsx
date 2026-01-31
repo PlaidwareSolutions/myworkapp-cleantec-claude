@@ -1,13 +1,13 @@
 import { useParams, Link, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Download, Package, User, Truck, Calendar, Check, X, RotateCcw, Save, History } from "lucide-react";
+import { ArrowLeft, Download, Truck, Check, X, RotateCcw, Save, History } from "lucide-react";
 import { ordersApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -295,57 +295,22 @@ export default function UpdateOrderPage() {
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Order Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label className="text-muted-foreground">Reference ID</Label>
-                <Input value={order.referenceId} disabled data-testid="input-reference-id" />
-              </div>
-              <div>
-                <Label className="text-muted-foreground">Status</Label>
-                <Input value={order.status} disabled data-testid="input-status" />
-              </div>
-              <div>
-                <Label className="text-muted-foreground">Type</Label>
-                <Input value={order.type} disabled data-testid="input-type" />
-              </div>
-              <div>
-                <Label className="text-muted-foreground">PO Number</Label>
-                <Input 
-                  value={formData.poNumber}
-                  onChange={(e) => setFormData({ ...formData, poNumber: e.target.value })}
-                  disabled={!isInitiated}
-                  placeholder="Enter PO Number"
-                  data-testid="input-po-number"
-                />
-              </div>
-              <div>
-                <Label className="text-muted-foreground">Pallet Count</Label>
-                <Input value={order.palletCount || 0} disabled data-testid="input-pallet-count" />
-              </div>
-              <div>
-                <Label className="text-muted-foreground">Order Weight (lbs)</Label>
-                <Input value={order.orderWeight || 0} disabled data-testid="input-order-weight" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Customer & Carrier
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+      <Card>
+        <CardContent className="p-6 space-y-6">
+          <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <Label className="text-muted-foreground">Customer</Label>
+              <Label className="text-muted-foreground text-sm">Order ID</Label>
+              <Input value={order.referenceId} disabled className="bg-muted" data-testid="input-reference-id" />
+            </div>
+            <div>
+              <Label className="text-muted-foreground text-sm">Status</Label>
+              <Input value={order.status} disabled className="bg-muted" data-testid="input-status" />
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <Label className="text-muted-foreground text-sm">* Customer</Label>
               <Select 
                 value={formData.customerId} 
                 onValueChange={(value) => setFormData({ ...formData, customerId: value })}
@@ -362,7 +327,7 @@ export default function UpdateOrderPage() {
               </Select>
             </div>
             <div>
-              <Label className="text-muted-foreground">Carrier</Label>
+              <Label className="text-muted-foreground text-sm">Carrier</Label>
               <Select 
                 value={formData.carrierId} 
                 onValueChange={(value) => setFormData({ ...formData, carrierId: value })}
@@ -378,135 +343,187 @@ export default function UpdateOrderPage() {
                 </SelectContent>
               </Select>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Dates
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label className="text-muted-foreground">Delivery Date</Label>
-                <Input 
-                  type="date"
-                  value={formData.requiredDate}
-                  onChange={(e) => setFormData({ ...formData, requiredDate: e.target.value })}
-                  disabled={!isInitiated}
-                  data-testid="input-required-date"
-                />
-              </div>
-              <div>
-                <Label className="text-muted-foreground">Ship Date</Label>
-                <Input 
-                  type="date"
-                  value={formData.shipDate}
-                  onChange={(e) => setFormData({ ...formData, shipDate: e.target.value })}
-                  disabled={!isInitiated}
-                  data-testid="input-ship-date"
-                />
-              </div>
-              <div>
-                <Label className="text-muted-foreground">Created</Label>
-                <Input 
-                  value={order.createdAt ? new Date(order.createdAt).toLocaleDateString() : "-"} 
-                  disabled 
-                  data-testid="input-created-at"
-                />
-              </div>
-              <div>
-                <Label className="text-muted-foreground">Updated</Label>
-                <Input 
-                  value={order.updatedAt ? new Date(order.updatedAt).toLocaleDateString() : "-"} 
-                  disabled 
-                  data-testid="input-updated-at"
-                />
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <Label className="text-muted-foreground text-sm">* Delivery Date</Label>
+              <Input 
+                type="date"
+                value={formData.requiredDate}
+                onChange={(e) => setFormData({ ...formData, requiredDate: e.target.value })}
+                disabled={!isInitiated}
+                data-testid="input-required-date"
+              />
+            </div>
+            <div>
+              <Label className="text-muted-foreground text-sm">Ship Date</Label>
+              <Input 
+                type="date"
+                value={formData.shipDate}
+                onChange={(e) => setFormData({ ...formData, shipDate: e.target.value })}
+                disabled={!isInitiated}
+                placeholder="Select date"
+                data-testid="input-ship-date"
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <Label className="text-muted-foreground text-sm">Shipped Date</Label>
+              <Input 
+                type="date"
+                value={order.shippingDetails?.[0]?.shipmentDate ? order.shippingDetails[0].shipmentDate.split("T")[0] : ""}
+                disabled
+                className="bg-muted"
+                placeholder="Not shipped yet"
+                data-testid="input-shipped-date"
+              />
+            </div>
+            <div>
+              <Label className="text-muted-foreground text-sm">PO Number</Label>
+              <Input 
+                value={formData.poNumber}
+                onChange={(e) => setFormData({ ...formData, poNumber: e.target.value })}
+                disabled={!isInitiated}
+                placeholder="Enter PO Number"
+                data-testid="input-po-number"
+              />
+            </div>
+          </div>
+
+          {order.receiverName && (
+            <div>
+              <Label className="text-muted-foreground text-sm">Delivery Address</Label>
+              <div className="p-3 border rounded-md bg-muted/50 mt-1">
+                <p className="font-medium">Name: {order.receiverName}</p>
+                <p className="text-sm text-muted-foreground">
+                  Address: {order.receiverAddressStreet}, {order.receiverAddressCity}, {order.receiverAddressState} - {order.receiverAddressZipCode}, {order.receiverAddressCountry}
+                </p>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          )}
 
-        {isOutboundApproved && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Truck className="h-5 w-5" />
-                Driver Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label className="text-muted-foreground">Driver Name</Label>
-                <Input 
-                  value={formData.driverName}
-                  onChange={(e) => setFormData({ ...formData, driverName: e.target.value })}
-                  placeholder="Enter driver name"
-                  data-testid="input-driver-name"
-                />
-              </div>
-              <div>
-                <Label className="text-muted-foreground">Trailer ID</Label>
-                <Input 
-                  value={formData.trailerId}
-                  onChange={(e) => setFormData({ ...formData, trailerId: e.target.value })}
-                  placeholder="Enter trailer ID"
-                  data-testid="input-trailer-id"
-                />
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Package className="h-5 w-5" />
-              Order Items
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+          <div className="border-t pt-6">
+            <h3 className="font-semibold text-lg mb-4">Items</h3>
             {order.items?.length > 0 ? (
-              <div className="space-y-2">
-                {order.items.map((item: any, index: number) => (
-                  <div key={index} className="flex items-center justify-between p-3 rounded-lg border" data-testid={`item-row-${index}`}>
-                    <span className="font-medium">{getProductName(item.productId)}</span>
-                    <div className="flex items-center gap-4">
-                      <Badge variant="secondary">Required: {item.requiredQuantity}</Badge>
+              order.items.map((item: any, index: number) => (
+                <div key={index} className="space-y-4" data-testid={`item-row-${index}`}>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <Label className="text-muted-foreground text-sm">* Product</Label>
+                      <Select value={item.productId} disabled>
+                        <SelectTrigger data-testid={`select-product-${index}`}>
+                          <SelectValue>{getProductName(item.productId)}</SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {products.map((p: any) => (
+                            <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground text-sm">* Required Quantity</Label>
+                      <Input 
+                        type="number"
+                        value={item.requiredQuantity}
+                        disabled
+                        data-testid={`input-required-quantity-${index}`}
+                      />
                     </div>
                   </div>
-                ))}
-              </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <Label className="text-muted-foreground text-sm">Pallet Count</Label>
+                      <Input 
+                        type="number"
+                        value={order.palletCount || 0}
+                        disabled
+                        className="bg-muted"
+                        data-testid="input-pallet-count"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground text-sm">Order Weight(lb)</Label>
+                      <Input 
+                        type="number"
+                        value={order.orderWeight || 0}
+                        disabled
+                        className="bg-muted"
+                        data-testid="input-order-weight"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))
             ) : (
               <p className="text-muted-foreground">No items in this order</p>
             )}
-            
-            {order.shippedItems?.length > 0 && (
-              <div className="mt-4 pt-4 border-t">
-                <h4 className="font-medium mb-2">Shipped Items</h4>
-                {order.shippedItems.map((item: any, index: number) => (
-                  <div key={index} className="flex items-center justify-between p-3 rounded-lg border mb-2" data-testid={`shipped-item-${index}`}>
-                    <span className="font-medium">{getProductName(item.productId)}</span>
-                    <Badge className="bg-purple-100 text-purple-800">Shipped: {item.shippedQuantity}</Badge>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+          </div>
 
-        {order.history?.length > 0 && (
-          <Card className="md:col-span-2">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+          <div className="border-t pt-6">
+            <h3 className="font-semibold text-lg mb-4">Asset Details</h3>
+            <div className="border rounded-md overflow-hidden">
+              <table className="w-full" data-testid="table-asset-details">
+                <thead className="bg-muted/50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-sm font-medium">ID</th>
+                    <th className="px-4 py-3 text-center text-sm font-medium">Ordered</th>
+                    <th className="px-4 py-3 text-center text-sm font-medium">Shipped</th>
+                    <th className="px-4 py-3 text-center text-sm font-medium">Processing</th>
+                    <th className="px-4 py-3 text-center text-sm font-medium">Returned</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-t" data-testid="row-asset-summary">
+                    <td className="px-4 py-3 text-sm">{order.referenceId}</td>
+                    <td className="px-4 py-3 text-center text-sm">{order.totalRequiredQuantity || 0}</td>
+                    <td className="px-4 py-3 text-center text-sm">{order.totalShippedQuantity || 0}</td>
+                    <td className="px-4 py-3 text-center text-sm">{order.totalProcessorPingQuantity || 0}</td>
+                    <td className="px-4 py-3 text-center text-sm">{order.totalReturnedQuantity || 0}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {isOutboundApproved && (
+            <div className="border-t pt-6">
+              <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                <Truck className="h-5 w-5" />
+                Driver Information
+              </h3>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <Label className="text-muted-foreground text-sm">Driver Name</Label>
+                  <Input 
+                    value={formData.driverName}
+                    onChange={(e) => setFormData({ ...formData, driverName: e.target.value })}
+                    placeholder="Enter driver name"
+                    data-testid="input-driver-name"
+                  />
+                </div>
+                <div>
+                  <Label className="text-muted-foreground text-sm">Trailer ID</Label>
+                  <Input 
+                    value={formData.trailerId}
+                    onChange={(e) => setFormData({ ...formData, trailerId: e.target.value })}
+                    placeholder="Enter trailer ID"
+                    data-testid="input-trailer-id"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {order.history?.length > 0 && (
+            <div className="border-t pt-6">
+              <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
                 <History className="h-5 w-5" />
                 Order History
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+              </h3>
               <div className="space-y-3">
                 {order.history.map((event: any, index: number) => (
                   <div key={index} className="flex items-start gap-4 p-3 rounded-lg border" data-testid={`history-item-${index}`}>
@@ -520,10 +537,10 @@ export default function UpdateOrderPage() {
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
