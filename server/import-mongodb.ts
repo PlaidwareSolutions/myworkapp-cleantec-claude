@@ -10,6 +10,10 @@
  * - Field name mapping
  * - Proper insertion order (respecting foreign keys)
  * - Data transformation and normalization
+ * 
+ * SECURITY NOTE: This script sets a default password (admin123) for all admin/owner
+ * users to enable login after import. This is intended for DEVELOPMENT environments
+ * only. For production use, change passwords immediately after import.
  */
 
 import * as BSON from 'bson';
@@ -22,8 +26,9 @@ import {
   shipments, shipmentBols, settings, customFields,
   hierarchies, hierarchyLevels, hierarchyNodes
 } from '@shared/schema';
-import { sql } from 'drizzle-orm';
+import { sql, eq, or } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
+import bcrypt from 'bcrypt';
 
 const EXPORT_DIR = './mongodb_export/myworkapp';
 
@@ -35,7 +40,7 @@ const SYSTEM_ID = '00000000-0000-0000-0000-000000000000';
 
 function parseBsonFile(filePath: string): any[] {
   if (!fs.existsSync(filePath)) {
-    console.log(`File not found: ${filePath}`);
+    console.log(`  File not found: ${filePath}`);
     return [];
   }
   
@@ -44,13 +49,33 @@ function parseBsonFile(filePath: string): any[] {
   
   const documents: any[] = [];
   let offset = 0;
+  let errors = 0;
   
   while (offset < data.length) {
-    const size = data.readInt32LE(offset);
-    if (size <= 0 || offset + size > data.length) break;
-    const doc = BSON.deserialize(data.subarray(offset, offset + size));
-    documents.push(doc);
-    offset += size;
+    try {
+      const size = data.readInt32LE(offset);
+      if (size <= 0 || size > 16 * 1024 * 1024) { // Max 16MB per document
+        console.warn(`  Warning: Invalid document size at offset ${offset}`);
+        errors++;
+        break;
+      }
+      if (offset + size > data.length) {
+        console.warn(`  Warning: Document at offset ${offset} extends beyond file (truncated?)`);
+        errors++;
+        break;
+      }
+      const doc = BSON.deserialize(data.subarray(offset, offset + size));
+      documents.push(doc);
+      offset += size;
+    } catch (e) {
+      console.error(`  Error parsing BSON at offset ${offset}:`, e);
+      errors++;
+      break;
+    }
+  }
+  
+  if (errors > 0) {
+    console.warn(`  Parsed ${documents.length} documents with ${errors} errors`);
   }
   
   return documents;
@@ -256,37 +281,50 @@ async function importAssets() {
   // Process in batches for performance
   const batchSize = 500;
   let imported = 0;
+  let skipped = 0;
   
   for (let i = 0; i < docs.length; i += batchSize) {
     const batch = docs.slice(i, i + batchSize);
-    const values = batch.map(doc => {
-      const id = convertId(doc._id);
-      
-      // Tag ID - preserve the original tag reference
-      const tagId = doc.tag?.toString() || null;
-      
-      return {
-        id,
-        productId: getMappedId(doc.product),
-        tagId,
-        active: doc.active ?? true,
-        lastState: doc.lastState || 'AVAILABLE',
-        customerId: getMappedId(doc.customer),
-        createdBy: getMappedId(doc.createdBy),
-        createdAt: parseDate(doc.createdAt),
-        updatedAt: parseDate(doc.updatedAt),
-      };
-    });
     
-    await db.insert(assets).values(values).onConflictDoNothing();
-    imported += batch.length;
+    // Filter out assets with missing required fields
+    const values = batch
+      .filter(doc => {
+        const productId = getMappedId(doc.product);
+        const tagId = doc.tag?.toString();
+        if (!productId || !tagId) {
+          skipped++;
+          return false;
+        }
+        return true;
+      })
+      .map(doc => {
+        const id = convertId(doc._id);
+        const tagId = doc.tag.toString();
+        
+        return {
+          id,
+          productId: getMappedId(doc.product)!,
+          tagId,
+          active: doc.active ?? true,
+          lastState: doc.lastState || 'AVAILABLE',
+          customerId: getMappedId(doc.customer),
+          createdBy: getMappedId(doc.createdBy),
+          createdAt: parseDate(doc.createdAt),
+          updatedAt: parseDate(doc.updatedAt),
+        };
+      });
     
-    if (imported % 5000 === 0) {
+    if (values.length > 0) {
+      await db.insert(assets).values(values).onConflictDoNothing();
+    }
+    imported += values.length;
+    
+    if ((imported + skipped) % 5000 === 0) {
       console.log(`  Imported ${imported}/${docs.length} assets...`);
     }
   }
   
-  console.log(`Imported ${docs.length} assets`);
+  console.log(`Imported ${imported} assets (${skipped} skipped - missing product/tag)`);
 }
 
 async function importOrders() {
@@ -613,6 +651,56 @@ async function importHierarchies() {
   console.log(`Imported ${nodeDocs.length} hierarchy nodes`);
 }
 
+async function setupAdminPassword() {
+  console.log('Setting up admin password...');
+  
+  // Set a default password for admin users (password: admin123)
+  const hashedPassword = await bcrypt.hash('admin123', 10);
+  
+  // Update admin users with the default password
+  await db.update(contacts)
+    .set({ systemUserPasswordHash: hashedPassword })
+    .where(
+      or(
+        eq(contacts.type, 'ADMIN'),
+        eq(contacts.type, 'OWNER')
+      )
+    );
+  
+  // Check if we have an existing admin user with username 'admin'
+  const existingAdmin = await db.select()
+    .from(contacts)
+    .where(eq(contacts.systemUserUsername, 'admin'))
+    .limit(1);
+  
+  if (existingAdmin.length === 0) {
+    // Create a convenient 'admin' alias for the System user
+    await db.update(contacts)
+      .set({ 
+        systemUserUsername: 'admin', 
+        systemUserActive: true,
+        systemUserPasswordHash: hashedPassword 
+      })
+      .where(eq(contacts.id, SYSTEM_ID));
+    console.log('  Created admin user: username=admin, password=admin123');
+  }
+  
+  // List other admin users
+  const adminUsers = await db.select({ username: contacts.systemUserUsername, name: contacts.name })
+    .from(contacts)
+    .where(
+      sql`${contacts.systemUserUsername} IS NOT NULL AND ${contacts.systemUserUsername} != 'admin'`
+    );
+  
+  if (adminUsers.length > 0) {
+    console.log('  Other users can also login with password: admin123');
+    adminUsers.slice(0, 5).forEach(u => console.log(`    - ${u.username} (${u.name})`));
+    if (adminUsers.length > 5) {
+      console.log(`    ... and ${adminUsers.length - 5} more`);
+    }
+  }
+}
+
 async function main() {
   console.log('========================================');
   console.log('MongoDB to PostgreSQL Import Script');
@@ -638,6 +726,9 @@ async function main() {
     await importBols();
     await importShipments();
     await importAssetEvents();
+    
+    // Set up admin passwords for authentication
+    await setupAdminPassword();
     
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
     console.log('\n========================================');
