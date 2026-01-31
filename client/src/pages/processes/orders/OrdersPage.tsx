@@ -18,15 +18,10 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Search, FileText, Check, X, Truck, Download, Filter } from "lucide-react";
+import { Plus, Search, FileText, Check, X, Truck, Download, Filter, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 
 type StatusFilter = "ALL" | "INITIATED" | "APPROVED" | "SHIPPED" | "SHIPPED-PARTIAL" | "RECEIVED" | "RETURNED" | "CANCELLED";
 type TypeFilter = "ALL" | "INBOUND" | "OUTBOUND";
-
-const typeColors: Record<string, string> = {
-  INBOUND: "bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-700",
-  OUTBOUND: "bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-900 dark:text-purple-200 dark:border-purple-700",
-};
 
 const statusColors: Record<string, string> = {
   INITIATED: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
@@ -281,7 +276,14 @@ export default function OrdersPage() {
                       <TableCell>{order.customer?.name || "-"}</TableCell>
                       <TableCell>{order.carrier?.name || "-"}</TableCell>
                       <TableCell>
-                        <Badge className={typeColors[order.type?.toUpperCase()] || ""}>{order.type}</Badge>
+                        <div className="flex items-center gap-1.5">
+                          {order.type?.toUpperCase() === "INBOUND" ? (
+                            <ArrowDownToLine className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                          ) : (
+                            <ArrowUpFromLine className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                          )}
+                          <span className="text-sm">{order.type}</span>
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Badge className={statusColors[order.status] || ""}>
