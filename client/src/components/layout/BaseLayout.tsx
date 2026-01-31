@@ -43,11 +43,11 @@ export function BaseLayout({ children }: BaseLayoutProps) {
                 data-testid="button-sidebar-toggle"
               />
             </div>
-            <div className="flex items-end h-full">
+            <div className="flex items-center justify-center">
               <img
                 src={cleantecLogo}
                 alt="CleanTech Logistics"
-                className="h-16 object-contain"
+                className="h-12 object-contain"
               />
             </div>
             <div className="flex items-center gap-3">
