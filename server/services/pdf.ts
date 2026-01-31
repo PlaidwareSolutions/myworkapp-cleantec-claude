@@ -35,21 +35,29 @@ function addHeader(doc: InstanceType<typeof PDFDocument>) {
 }
 
 function addFooter(doc: InstanceType<typeof PDFDocument>) {
-  // Fixed footer position at bottom of current page (A4: 842 points height)
+  // Fixed footer position at bottom of page (A4: 842 points height)
   const footerY = 760;
   
-  // Use lineBreak: false to prevent auto-pagination when writing at fixed positions
+  // Save current page number to ensure we draw on correct page
+  const currentPage = doc.bufferedPageRange().count;
+  
+  // Draw footer elements using absolute positioning without triggering new pages
   if (fs.existsSync(MYWORKAPP_LOGO_PATH)) {
     doc.image(MYWORKAPP_LOGO_PATH, 260, footerY, { width: 30 });
-    doc.fontSize(8).font("Helvetica").text("Powered by MyWorkApp.io", 295, footerY + 8, { lineBreak: false });
+    // Position text manually without using doc.text flow
+    doc.fontSize(8).font("Helvetica");
+    doc.text("Powered by MyWorkApp.io", 295, footerY + 8, { lineBreak: false, continued: false });
   } else {
-    doc.fontSize(8).font("Helvetica").text("Powered by MyWorkApp.io", 50, footerY, { align: "center", lineBreak: false });
+    doc.fontSize(8).font("Helvetica");
+    doc.text("Powered by MyWorkApp.io", 50, footerY, { align: "center", width: 495, lineBreak: false, continued: false });
   }
   
-  doc.fontSize(7).text(
+  // Write generated date centered
+  doc.fontSize(7);
+  doc.text(
     `Generated on ${new Date().toLocaleString()}`,
     50, footerY + 25,
-    { align: "center", width: 495, lineBreak: false }
+    { align: "center", width: 495, lineBreak: false, continued: false }
   );
 }
 

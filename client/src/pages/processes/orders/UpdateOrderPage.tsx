@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Download, Truck, Check, X, RotateCcw, Save, History, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Download, Truck, Check, X, RotateCcw, Save, History, Plus, Trash2, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 import { ordersApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -279,7 +279,14 @@ export default function UpdateOrderPage() {
             <h1 className="text-3xl font-bold tracking-tight">{order.referenceId}</h1>
             <div className="flex items-center gap-2">
               <span className="text-muted-foreground">Order Details</span>
-              <Badge variant="outline" data-testid="badge-type">{order.type}</Badge>
+              <Badge variant="outline" data-testid="badge-type">
+                {order.type === "INBOUND" ? (
+                  <ArrowDownToLine className="h-3 w-3 mr-1 text-blue-600 dark:text-blue-400" />
+                ) : (
+                  <ArrowUpFromLine className="h-3 w-3 mr-1 text-purple-600 dark:text-purple-400" />
+                )}
+                {order.type}
+              </Badge>
               <Badge className={statusColors[order.status] || ""} data-testid="badge-status">{order.status}</Badge>
             </div>
           </div>
