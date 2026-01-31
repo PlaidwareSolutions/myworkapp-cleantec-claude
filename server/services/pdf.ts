@@ -97,16 +97,16 @@ export async function generateOrderPdf(
       const customerBoxY = doc.y;
       doc.fontSize(10).font("Helvetica");
       doc.rect(50, customerBoxY, 230, 65).stroke();
-      doc.text(`Name: ${customer.name}`, 60, customerBoxY + 10);
-      doc.text(`Email: ${customer.email?.join(", ") || "N/A"}`, 60, customerBoxY + 25);
-      doc.text(`Phone: ${customer.phone?.join(", ") || "N/A"}`, 60, customerBoxY + 40);
+      doc.text(`Name: ${customer.name}`, 60, customerBoxY + 10, { width: 210, ellipsis: true });
+      doc.text(`Email: ${customer.email?.join(", ") || "N/A"}`, 60, customerBoxY + 25, { width: 210, ellipsis: true });
+      doc.text(`Phone: ${customer.phone?.join(", ") || "N/A"}`, 60, customerBoxY + 40, { width: 210, ellipsis: true });
 
       doc.fontSize(12).font("Helvetica-Bold").text("Carrier Information", 310, infoSectionY);
       doc.fontSize(10).font("Helvetica");
       doc.rect(310, customerBoxY, 235, 65).stroke();
-      doc.text(`Name: ${carrier?.name || "N/A"}`, 320, customerBoxY + 10);
-      doc.text(`Email: ${carrier?.email?.join(", ") || "N/A"}`, 320, customerBoxY + 25);
-      doc.text(`Phone: ${carrier?.phone?.join(", ") || "N/A"}`, 320, customerBoxY + 40);
+      doc.text(`Name: ${carrier?.name || "N/A"}`, 320, customerBoxY + 10, { width: 215, ellipsis: true });
+      doc.text(`Email: ${carrier?.email?.join(", ") || "N/A"}`, 320, customerBoxY + 25, { width: 215, ellipsis: true });
+      doc.text(`Phone: ${carrier?.phone?.join(", ") || "N/A"}`, 320, customerBoxY + 40, { width: 215, ellipsis: true });
 
       doc.y = customerBoxY + 75;
       doc.moveDown();

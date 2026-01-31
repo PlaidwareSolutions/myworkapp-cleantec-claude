@@ -338,17 +338,6 @@ export default function UpdateOrderPage() {
         <CardContent className="p-6 space-y-6">
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <Label className="text-muted-foreground text-sm">Order ID</Label>
-              <Input value={order.referenceId} disabled className="bg-muted" data-testid="input-reference-id" />
-            </div>
-            <div>
-              <Label className="text-muted-foreground text-sm">Status</Label>
-              <Input value={order.status} disabled className="bg-muted" data-testid="input-status" />
-            </div>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
               <Label className="text-muted-foreground text-sm">* Customer</Label>
               <Select 
                 value={formData.customerId} 
