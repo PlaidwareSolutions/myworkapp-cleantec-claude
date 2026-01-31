@@ -55,7 +55,10 @@ export default function Login() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-green-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 p-4">
+    <div className="relative flex min-h-screen items-center justify-center bg-gradient-to-br from-green-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 p-4">
+      <div className="absolute top-4 left-4">
+        <img src={myworkappIcon} alt="MyWorkApp" className="h-10 w-10 object-contain" />
+      </div>
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
@@ -122,9 +125,6 @@ export default function Login() {
           </Form>
         </CardContent>
       </Card>
-      <div className="absolute bottom-4 flex items-center justify-center w-full">
-        <img src={myworkappIcon} alt="MyWorkApp" className="h-8 opacity-50" />
-      </div>
     </div>
   );
 }

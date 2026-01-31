@@ -103,9 +103,12 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader className="border-b px-4 py-3">
-        <Link href="/" className="flex items-center gap-2">
-          <img src={cleantecLogo} alt="CleanTech Logistics" className="h-10 object-contain" />
-        </Link>
+        <div className="flex items-center gap-3">
+          <img src={myworkappIcon} alt="MyWorkApp" className="h-8 w-8 object-contain" />
+          <Link href="/" className="flex-1 flex justify-center">
+            <img src={cleantecLogo} alt="CleanTech Logistics" className="h-10 object-contain" />
+          </Link>
+        </div>
       </SidebarHeader>
 
       <SidebarContent>
@@ -152,9 +155,6 @@ export function AppSidebar() {
           >
             <LogOut className="h-4 w-4" />
           </Button>
-        </div>
-        <div className="flex items-center justify-center pt-2 border-t">
-          <img src={myworkappIcon} alt="MyWorkApp" className="h-6 opacity-60" />
         </div>
       </SidebarFooter>
     </Sidebar>
