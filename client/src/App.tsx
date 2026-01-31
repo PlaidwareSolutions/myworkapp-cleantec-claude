@@ -50,7 +50,11 @@ function AppRoutes() {
             </ProtectedRoute>
           </Route>
           
-          <Route path="/search" component={SearchPage} />
+          <Route path="/search">
+            <ProtectedRoute permissions={["AssetManagement", "OrderViewAll", "admin"]}>
+              <SearchPage />
+            </ProtectedRoute>
+          </Route>
           
           <Route path="/processes/orders">
             <ProtectedRoute permissions={["OrderViewAll", "OrderViewSelf"]}>

@@ -57,10 +57,19 @@ export default function OrdersPage() {
     queryKey: [buildQueryString()],
   });
 
+  const invalidateOrders = () => {
+    queryClient.invalidateQueries({ 
+      predicate: (query) => {
+        const key = query.queryKey[0];
+        return typeof key === 'string' && key.startsWith('/api/order');
+      }
+    });
+  };
+
   const approveMutation = useMutation({
     mutationFn: (id: string) => ordersApi.approve(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/order"] });
+      invalidateOrders();
       toast({ title: "Order approved successfully" });
     },
     onError: (error: Error) => {
@@ -71,7 +80,7 @@ export default function OrdersPage() {
   const cancelMutation = useMutation({
     mutationFn: (id: string) => ordersApi.cancel(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/order"] });
+      invalidateOrders();
       toast({ title: "Order cancelled successfully" });
     },
     onError: (error: Error) => {

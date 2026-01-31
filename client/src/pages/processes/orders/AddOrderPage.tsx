@@ -88,7 +88,12 @@ export default function AddOrderPage() {
   const createMutation = useMutation({
     mutationFn: (data: OrderForm) => ordersApi.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/order"] });
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return typeof key === 'string' && key.startsWith('/api/order');
+        }
+      });
       toast({ title: "Order created successfully" });
       setLocation("/processes/orders");
     },
