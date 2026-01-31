@@ -29,14 +29,12 @@ export function BaseLayout({ children }: BaseLayoutProps) {
 
   return (
     <SidebarProvider style={sidebarStyle}>
-      <div className="flex h-screen w-full">
+      <div className="flex h-screen w-full relative">
         <AppSidebar />
         <div className="flex flex-col flex-1 overflow-hidden">
           <header className="flex h-16 shrink-0 items-center justify-between bg-sidebar border-b border-sidebar-border px-4">
             <div className="flex items-center gap-3">
               <SidebarTrigger className="text-sidebar-foreground" data-testid="button-sidebar-toggle" />
-              <img src={myworkappIcon} alt="MyWorkApp" className="h-10 w-10 object-contain" />
-              <span className="text-sidebar-foreground font-semibold text-lg hidden sm:inline">MyWorkApp.io</span>
             </div>
             <div className="flex items-center">
               <img src={cleantecLogo} alt="CleanTech Logistics" className="h-12 object-contain" />
@@ -52,8 +50,11 @@ export function BaseLayout({ children }: BaseLayoutProps) {
               </Avatar>
             </div>
           </header>
-          <main className="flex-1 overflow-auto p-4 md:p-6 bg-muted/30">
+          <main className="flex-1 overflow-auto p-4 md:p-6 bg-muted/30 relative">
             {children}
+            <div className="fixed bottom-4 right-4 opacity-20 pointer-events-none z-10">
+              <img src={myworkappIcon} alt="MyWorkApp" className="h-24 w-24 object-contain" />
+            </div>
           </main>
         </div>
       </div>

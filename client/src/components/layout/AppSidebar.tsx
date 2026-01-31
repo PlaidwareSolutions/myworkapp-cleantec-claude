@@ -6,6 +6,7 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
+  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -26,6 +27,7 @@ import {
   LogOut,
   Cpu,
 } from "lucide-react";
+import myworkappIcon from "@/assets/images/myworkapp-icon.png";
 
 interface MenuItem {
   title: string;
@@ -82,6 +84,12 @@ export function AppSidebar() {
 
   return (
     <Sidebar className="border-r-0">
+      <SidebarHeader className="px-4 py-3 border-b border-sidebar-border">
+        <div className="flex items-center gap-2">
+          <img src={myworkappIcon} alt="MyWorkApp" className="h-8 w-8 object-contain" />
+          <span className="text-sidebar-foreground font-semibold text-lg">MyWorkApp.io</span>
+        </div>
+      </SidebarHeader>
       <SidebarContent className="pt-2">
         {filteredGroups.map((group) => (
           <SidebarGroup key={group.label}>
