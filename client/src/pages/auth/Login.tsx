@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -22,9 +22,16 @@ type LoginForm = z.infer<typeof loginSchema>;
 
 export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+
+  // Redirect when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      setLocation("/");
+    }
+  }, [isAuthenticated, setLocation]);
 
   const form = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
@@ -42,7 +49,7 @@ export default function Login() {
         title: "Welcome back!",
         description: "You have successfully logged in.",
       });
-      setLocation("/");
+      // Navigation is handled by the useEffect above
     } catch (error) {
       toast({
         title: "Login failed",
