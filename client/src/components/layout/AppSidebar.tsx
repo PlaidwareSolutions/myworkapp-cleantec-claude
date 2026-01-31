@@ -26,9 +26,10 @@ import {
   Settings,
   Search,
   LogOut,
-  Recycle,
   Cpu,
 } from "lucide-react";
+import cleantecLogo from "@/assets/images/cleantec-logo.png";
+import myworkappIcon from "@/assets/images/myworkapp-icon.png";
 
 interface MenuItem {
   title: string;
@@ -102,12 +103,9 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader className="border-b px-4 py-3">
-        <div className="flex items-center gap-2">
-          <div className="rounded-lg bg-primary/10 p-1.5">
-            <Recycle className="h-5 w-5 text-primary" />
-          </div>
-          <span className="font-semibold text-lg">CleanTech</span>
-        </div>
+        <Link href="/" className="flex items-center gap-2">
+          <img src={cleantecLogo} alt="CleanTech Logistics" className="h-10 object-contain" />
+        </Link>
       </SidebarHeader>
 
       <SidebarContent>
@@ -135,7 +133,7 @@ export function AppSidebar() {
         ))}
       </SidebarContent>
 
-      <SidebarFooter className="border-t p-4">
+      <SidebarFooter className="border-t p-4 space-y-3">
         <div className="flex items-center gap-3">
           <Avatar className="h-9 w-9">
             <AvatarFallback className="bg-primary/10 text-primary text-sm">
@@ -154,6 +152,9 @@ export function AppSidebar() {
           >
             <LogOut className="h-4 w-4" />
           </Button>
+        </div>
+        <div className="flex items-center justify-center pt-2 border-t">
+          <img src={myworkappIcon} alt="MyWorkApp" className="h-6 opacity-60" />
         </div>
       </SidebarFooter>
     </Sidebar>

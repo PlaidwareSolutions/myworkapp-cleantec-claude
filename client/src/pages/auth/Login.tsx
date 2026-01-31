@@ -9,7 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Recycle } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import cleantecLogo from "@/assets/images/cleantec-logo.png";
+import myworkappIcon from "@/assets/images/myworkapp-icon.png";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -57,11 +59,8 @@ export default function Login() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
-            <div className="rounded-full bg-primary/10 p-3">
-              <Recycle className="h-8 w-8 text-primary" />
-            </div>
+            <img src={cleantecLogo} alt="CleanTech Logistics" className="h-12 object-contain" />
           </div>
-          <CardTitle className="text-2xl font-bold">CleanTech</CardTitle>
           <CardDescription>
             Asset Tracking & Order Management
           </CardDescription>
@@ -123,6 +122,9 @@ export default function Login() {
           </Form>
         </CardContent>
       </Card>
+      <div className="absolute bottom-4 flex items-center justify-center w-full">
+        <img src={myworkappIcon} alt="MyWorkApp" className="h-8 opacity-50" />
+      </div>
     </div>
   );
 }
