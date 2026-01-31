@@ -37,7 +37,7 @@ export function BaseLayout({ children }: BaseLayoutProps) {
               <SidebarTrigger className="text-sidebar-foreground" data-testid="button-sidebar-toggle" />
             </div>
             <div className="flex items-center">
-              <img src={cleantecLogo} alt="CleanTech Logistics" className="h-12 object-contain" />
+              <img src={cleantecLogo} alt="CleanTech Logistics" className="h-14 object-contain" />
             </div>
             <div className="flex items-center gap-3">
               <span className="text-sidebar-foreground text-sm hidden lg:block">
