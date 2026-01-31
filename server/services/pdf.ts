@@ -96,19 +96,39 @@ export async function generateOrderPdf(
       doc.moveDown(0.3);
       const customerBoxY = doc.y;
       doc.fontSize(10).font("Helvetica");
-      doc.rect(50, customerBoxY, 230, 65).stroke();
+      
+      // Calculate dynamic heights based on content
+      const customerEmail = customer.email?.join(", ") || "N/A";
+      const customerPhone = customer.phone?.join(", ") || "N/A";
+      const carrierEmail = carrier?.email?.join(", ") || "N/A";
+      const carrierPhone = carrier?.phone?.join(", ") || "N/A";
+      
+      // Measure text heights
+      const customerEmailHeight = doc.heightOfString(`Email: ${customerEmail}`, { width: 210 });
+      const customerPhoneHeight = doc.heightOfString(`Phone: ${customerPhone}`, { width: 210 });
+      const carrierEmailHeight = doc.heightOfString(`Email: ${carrierEmail}`, { width: 215 });
+      const carrierPhoneHeight = doc.heightOfString(`Phone: ${carrierPhone}`, { width: 215 });
+      
+      // Calculate box height: name(15) + padding(10) + email + phone + padding(10)
+      const customerBoxHeight = 10 + 15 + customerEmailHeight + customerPhoneHeight + 10;
+      const carrierBoxHeight = 10 + 15 + carrierEmailHeight + carrierPhoneHeight + 10;
+      const maxBoxHeight = Math.max(customerBoxHeight, carrierBoxHeight, 65);
+      
+      doc.rect(50, customerBoxY, 230, maxBoxHeight).stroke();
       doc.text(`Name: ${customer.name}`, 60, customerBoxY + 10, { width: 210, ellipsis: true });
-      doc.text(`Email: ${customer.email?.join(", ") || "N/A"}`, 60, customerBoxY + 25, { width: 210, ellipsis: true });
-      doc.text(`Phone: ${customer.phone?.join(", ") || "N/A"}`, 60, customerBoxY + 40, { width: 210, ellipsis: true });
+      doc.text(`Email: ${customerEmail}`, 60, customerBoxY + 25, { width: 210 });
+      const customerPhoneY = customerBoxY + 25 + customerEmailHeight;
+      doc.text(`Phone: ${customerPhone}`, 60, customerPhoneY, { width: 210, ellipsis: true });
 
       doc.fontSize(12).font("Helvetica-Bold").text("Carrier Information", 310, infoSectionY);
       doc.fontSize(10).font("Helvetica");
-      doc.rect(310, customerBoxY, 235, 65).stroke();
+      doc.rect(310, customerBoxY, 235, maxBoxHeight).stroke();
       doc.text(`Name: ${carrier?.name || "N/A"}`, 320, customerBoxY + 10, { width: 215, ellipsis: true });
-      doc.text(`Email: ${carrier?.email?.join(", ") || "N/A"}`, 320, customerBoxY + 25, { width: 215, ellipsis: true });
-      doc.text(`Phone: ${carrier?.phone?.join(", ") || "N/A"}`, 320, customerBoxY + 40, { width: 215, ellipsis: true });
+      doc.text(`Email: ${carrierEmail}`, 320, customerBoxY + 25, { width: 215 });
+      const carrierPhoneY = customerBoxY + 25 + carrierEmailHeight;
+      doc.text(`Phone: ${carrierPhone}`, 320, carrierPhoneY, { width: 215, ellipsis: true });
 
-      doc.y = customerBoxY + 75;
+      doc.y = customerBoxY + maxBoxHeight + 10;
       doc.moveDown();
 
       if (order.receiverName) {

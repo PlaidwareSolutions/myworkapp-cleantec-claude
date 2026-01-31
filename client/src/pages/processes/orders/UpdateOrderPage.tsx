@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Download, Truck, Check, X, RotateCcw, Save, History } from "lucide-react";
+import { ArrowLeft, Download, Truck, Check, X, RotateCcw, Save, History, Plus, Trash2 } from "lucide-react";
 import { ordersApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -66,7 +66,13 @@ export default function UpdateOrderPage() {
     queryKey: ["/api/entity/product?limit=100"],
   });
 
+  const { data: settingsData } = useQuery<any>({
+    queryKey: ["/api/settings"],
+  });
+
   const order = data?.data;
+  const settings = settingsData?.data;
+  const warehouses = settings?.warehouses || [];
   const contacts = contactsData?.data || [];
   const products = productsData?.data || [];
   
@@ -191,20 +197,38 @@ export default function UpdateOrderPage() {
         }));
       }
       
-      // Include receiver address from selected processor
+      // Include receiver address - warehouses for INBOUND, processors for OUTBOUND
       if (formData.receiverId) {
-        const processor = contacts.find((c: any) => c.id === formData.receiverId && c.type === "PROCESSOR");
-        if (processor) {
-          updateData.receiverAddress = {
-            name: processor.name,
-            address: {
-              street: processor.addressStreet || "",
-              city: processor.addressCity || "",
-              state: processor.addressState || "",
-              zipCode: processor.addressZipCode || "",
-              country: processor.addressCountry || "USA",
-            }
-          };
+        if (order.type === "INBOUND") {
+          // Use warehouse from settings
+          const warehouse = warehouses.find((w: any) => w.name === formData.receiverId);
+          if (warehouse) {
+            updateData.receiverAddress = {
+              name: warehouse.name,
+              address: {
+                street: warehouse.address?.street || "",
+                city: warehouse.address?.city || "",
+                state: warehouse.address?.state || "",
+                zipCode: warehouse.address?.zipCode || "",
+                country: warehouse.address?.country || "USA",
+              }
+            };
+          }
+        } else {
+          // Use processor contact for OUTBOUND
+          const processor = contacts.find((c: any) => c.id === formData.receiverId && c.type === "PROCESSOR");
+          if (processor) {
+            updateData.receiverAddress = {
+              name: processor.name,
+              address: {
+                street: processor.addressStreet || "",
+                city: processor.addressCity || "",
+                state: processor.addressState || "",
+                zipCode: processor.addressZipCode || "",
+                country: processor.addressCountry || "USA",
+              }
+            };
+          }
         }
       }
     }
@@ -427,29 +451,49 @@ export default function UpdateOrderPage() {
           <div>
             <Label className="text-muted-foreground text-sm">Delivery Address</Label>
             {isInitiated ? (
-              <Select 
-                value={formData.receiverId || ""} 
-                onValueChange={(value) => {
-                  const processor = contacts.find((c: any) => c.id === value && c.type === "PROCESSOR");
-                  if (processor) {
+              order.type === "INBOUND" ? (
+                <Select 
+                  value={formData.receiverId || ""} 
+                  onValueChange={(value) => {
                     setFormData({ 
                       ...formData, 
                       receiverId: value,
                     });
-                  }
-                }}
-              >
-                <SelectTrigger data-testid="select-delivery-address">
-                  <SelectValue placeholder="Select Cleantec Address">
-                    {formData.receiverId ? contacts.find((c: any) => c.id === formData.receiverId)?.name : "Select Cleantec Address"}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {contacts.filter((c: any) => c.type === "PROCESSOR").map((c: any) => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                  }}
+                >
+                  <SelectTrigger data-testid="select-delivery-address">
+                    <SelectValue placeholder="Select Warehouse">
+                      {formData.receiverId ? warehouses.find((w: any) => w.name === formData.receiverId)?.name || formData.receiverId : "Select Warehouse"}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {warehouses.map((w: any, idx: number) => (
+                      <SelectItem key={idx} value={w.name}>{w.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Select 
+                  value={formData.receiverId || ""} 
+                  onValueChange={(value) => {
+                    setFormData({ 
+                      ...formData, 
+                      receiverId: value,
+                    });
+                  }}
+                >
+                  <SelectTrigger data-testid="select-delivery-address">
+                    <SelectValue placeholder="Select Processor">
+                      {formData.receiverId ? contacts.find((c: any) => c.id === formData.receiverId)?.name : "Select Processor"}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {contacts.filter((c: any) => c.type === "PROCESSOR").map((c: any) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )
             ) : order.receiverName ? (
               <div className="p-3 border rounded-md bg-muted/50 mt-1">
                 <p className="font-medium">Name: {order.receiverName}</p>
@@ -463,10 +507,44 @@ export default function UpdateOrderPage() {
           </div>
 
           <div className="border-t pt-6">
-            <h3 className="font-semibold text-lg mb-4">Items</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-lg">Items</h3>
+              {isInitiated && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setFormData({
+                      ...formData,
+                      items: [...formData.items, { productId: products[0]?.id || "", requiredQuantity: 1 }]
+                    });
+                  }}
+                  data-testid="button-add-item"
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Item
+                </Button>
+              )}
+            </div>
             {formData.items?.length > 0 ? (
               formData.items.map((item, index: number) => (
-                <div key={index} className="space-y-4" data-testid={`item-row-${index}`}>
+                <div key={index} className="space-y-4 mb-4 p-4 border rounded-md relative" data-testid={`item-row-${index}`}>
+                  {isInitiated && formData.items.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-2 right-2 h-8 w-8 text-destructive hover:text-destructive"
+                      onClick={() => {
+                        const newItems = formData.items.filter((_, i) => i !== index);
+                        setFormData({ ...formData, items: newItems });
+                      }}
+                      data-testid={`button-remove-item-${index}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                   <div className="grid gap-4 md:grid-cols-2">
                     <div>
                       <Label className="text-muted-foreground text-sm">* Product</Label>
@@ -505,33 +583,34 @@ export default function UpdateOrderPage() {
                       />
                     </div>
                   </div>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div>
-                      <Label className="text-muted-foreground text-sm">Pallet Count (auto-calculated)</Label>
-                      <Input 
-                        type="number"
-                        value={formData.palletCount}
-                        disabled
-                        className="bg-muted"
-                        data-testid="input-pallet-count"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground text-sm">Order Weight(lb) (auto-calculated)</Label>
-                      <Input 
-                        type="number"
-                        value={formData.orderWeight}
-                        disabled
-                        className="bg-muted"
-                        data-testid="input-order-weight"
-                      />
-                    </div>
-                  </div>
                 </div>
               ))
             ) : (
               <p className="text-muted-foreground">No items in this order</p>
             )}
+            
+            <div className="grid gap-4 md:grid-cols-2 mt-4">
+              <div>
+                <Label className="text-muted-foreground text-sm">Pallet Count (auto-calculated)</Label>
+                <Input 
+                  type="number"
+                  value={formData.palletCount}
+                  disabled
+                  className="bg-muted"
+                  data-testid="input-pallet-count"
+                />
+              </div>
+              <div>
+                <Label className="text-muted-foreground text-sm">Order Weight(lb) (auto-calculated)</Label>
+                <Input 
+                  type="number"
+                  value={formData.orderWeight}
+                  disabled
+                  className="bg-muted"
+                  data-testid="input-order-weight"
+                />
+              </div>
+            </div>
           </div>
 
           <div className="border-t pt-6">
