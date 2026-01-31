@@ -275,7 +275,7 @@ export default function OrdersPage() {
                       key={order.id} 
                       data-testid={`row-order-${order.id}`}
                       className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => navigate(`/processes/orders/${order.id}`)}
+                      onClick={() => navigate(`/processes/orders/update/${order.id}`)}
                     >
                       <TableCell className="font-medium">{order.referenceId}</TableCell>
                       <TableCell>{order.poNumber || "-"}</TableCell>
