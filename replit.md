@@ -51,9 +51,17 @@ A comprehensive PostgreSQL-based API for asset tracking, order management, and l
 - `POST /api/order/create` - Create order
 - `GET /api/order` - List orders with filters
 - `GET /api/order/:id` - Get order with full details
+- `PUT /api/order/:id` - Update order (when status allows)
 - `GET /api/order/:id/pdf` - Download order PDF
 - `POST /api/order/:id/approve` - Approve order
 - `POST /api/order/:id/cancel` - Cancel order
+- `POST /api/order/:id/revoke` - Revoke order approval
+
+### Order Editing Rules
+Orders are editable based on their status:
+- **INITIATED**: Full editing (customer, carrier, PO number, dates) + Approve/Cancel buttons
+- **APPROVED + OUTBOUND**: Driver info editable + Update/Revoke/Cancel buttons
+- **SHIPPED/RECEIVED/CANCELLED**: Read-only mode (no editing allowed)
 
 ### Tracking (BOLs & Shipments)
 - `GET /api/tracking/bol` - List BOLs

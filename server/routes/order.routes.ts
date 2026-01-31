@@ -373,4 +373,34 @@ router.post("/:id/cancel", authenticateMiddleware, async (req: AuthenticatedRequ
   }
 });
 
+// Revoke order approval
+router.post("/:id/revoke", authenticateMiddleware, async (req: AuthenticatedRequest, res, next) => {
+  try {
+    const order = await storage.getOrderById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    if (order.status !== "APPROVED") {
+      return res.status(400).json({ success: false, message: "Only approved orders can be revoked" });
+    }
+
+    const updatedOrder = await storage.updateOrder(req.params.id, {
+      status: "INITIATED",
+      updatedBy: req.user!.id,
+    });
+
+    await storage.createOrderEvent({
+      orderId: order.id,
+      status: "INITIATED",
+      comment: "Approval revoked",
+      createdBy: req.user!.id,
+    });
+
+    res.json({ success: true, message: "Order approval revoked", data: updatedOrder });
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;
