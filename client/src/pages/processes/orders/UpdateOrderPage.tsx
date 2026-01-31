@@ -333,10 +333,14 @@ export default function UpdateOrderPage() {
 
       <Card>
         <CardContent className="p-6 space-y-6">
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-3">
             <div>
               <Label className="text-muted-foreground text-sm">Order ID</Label>
               <Input value={order.referenceId} disabled className="bg-muted" data-testid="input-reference-id" />
+            </div>
+            <div>
+              <Label className="text-muted-foreground text-sm">Type</Label>
+              <Input value={order.type} disabled className="bg-muted" data-testid="input-type" />
             </div>
             <div>
               <Label className="text-muted-foreground text-sm">Status</Label>
