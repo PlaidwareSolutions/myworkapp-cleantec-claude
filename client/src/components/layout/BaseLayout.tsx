@@ -32,12 +32,12 @@ export function BaseLayout({ children }: BaseLayoutProps) {
       <div className="flex h-screen w-full relative">
         <AppSidebar />
         <div className="flex flex-col flex-1 overflow-hidden">
-          <header className="flex h-16 shrink-0 items-center justify-between bg-sidebar border-b border-sidebar-border px-4">
+          <header className="flex h-28 shrink-0 items-center justify-between bg-sidebar border-b border-sidebar-border px-4">
             <div className="flex items-center gap-3">
               <SidebarTrigger className="text-sidebar-foreground" data-testid="button-sidebar-toggle" />
             </div>
-            <div className="flex items-center">
-              <img src={cleantecLogo} alt="CleanTech Logistics" className="h-14 object-contain" />
+            <div className="flex items-center justify-center">
+              <img src={cleantecLogo} alt="CleanTech Logistics" className="h-24 object-contain" />
             </div>
             <div className="flex items-center gap-3">
               <span className="text-sidebar-foreground text-sm hidden lg:block">
