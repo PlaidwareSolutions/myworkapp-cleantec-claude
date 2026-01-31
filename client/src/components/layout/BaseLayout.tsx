@@ -1,5 +1,9 @@
 import { ReactNode } from "react";
-import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
+import {
+  SidebarProvider,
+  SidebarTrigger,
+  SidebarInset,
+} from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -34,10 +38,17 @@ export function BaseLayout({ children }: BaseLayoutProps) {
         <div className="flex flex-col flex-1 overflow-hidden">
           <header className="flex h-16 shrink-0 items-center justify-between bg-sidebar border-b border-sidebar-border px-4">
             <div className="flex items-center gap-3">
-              <SidebarTrigger className="text-sidebar-foreground" data-testid="button-sidebar-toggle" />
+              <SidebarTrigger
+                className="text-sidebar-foreground"
+                data-testid="button-sidebar-toggle"
+              />
             </div>
-            <div className="flex items-center">
-              <img src={cleantecLogo} alt="CleanTech Logistics" className="h-14 object-contain" />
+            <div className="flex items-end h-full">
+              <img
+                src={cleantecLogo}
+                alt="CleanTech Logistics"
+                className="h-16 object-contain"
+              />
             </div>
             <div className="flex items-center gap-3">
               <span className="text-sidebar-foreground text-sm hidden lg:block">
@@ -53,7 +64,11 @@ export function BaseLayout({ children }: BaseLayoutProps) {
           <main className="flex-1 overflow-auto p-4 md:p-6 bg-muted/30 relative">
             {children}
             <div className="fixed bottom-4 right-4 opacity-20 pointer-events-none z-10">
-              <img src={myworkappIcon} alt="MyWorkApp" className="h-24 w-24 object-contain" />
+              <img
+                src={myworkappIcon}
+                alt="MyWorkApp"
+                className="h-24 w-24 object-contain"
+              />
             </div>
           </main>
         </div>
