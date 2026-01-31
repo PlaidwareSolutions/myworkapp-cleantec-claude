@@ -1,16 +1,46 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { setupSwagger } from "./swagger";
+
+import userRoutes from "./routes/user.routes";
+import contactRoutes from "./routes/contact.routes";
+import entityRoutes from "./routes/entity.routes";
+import orderRoutes from "./routes/order.routes";
+import trackingRoutes from "./routes/tracking.routes";
+import statsRoutes from "./routes/stats.routes";
+import settingsRoutes from "./routes/settings.routes";
+import hierarchyRoutes from "./routes/hierarchy.routes";
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  // put application routes here
-  // prefix all routes with /api
+  // Setup Swagger documentation at /api-docs
+  setupSwagger(app);
 
-  // use storage to perform CRUD operations on the storage interface
-  // e.g. storage.insertUser(user) or storage.getUserByUsername(username)
+  // API routes
+  app.use("/api/user", userRoutes);
+  app.use("/api/contact", contactRoutes);
+  app.use("/api/entity", entityRoutes);
+  app.use("/api/order", orderRoutes);
+  app.use("/api/tracking", trackingRoutes);
+  app.use("/api/stats", statsRoutes);
+  app.use("/api/settings", settingsRoutes);
+  app.use("/api/hierarchy", hierarchyRoutes);
+
+  // Health check endpoint
+  app.get("/api/health", (req, res) => {
+    res.json({ success: true, message: "CleanTech API is running", timestamp: new Date().toISOString() });
+  });
+
+  // Error handling middleware
+  app.use((err: any, req: any, res: any, next: any) => {
+    console.error("API Error:", err);
+    res.status(err.status || 500).json({
+      success: false,
+      message: err.message || "Internal server error",
+    });
+  });
 
   return httpServer;
 }
