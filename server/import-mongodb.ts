@@ -342,14 +342,31 @@ async function importOrders() {
       continue;
     }
     
+    // Extract receiver address if present
+    const receiverAddress = doc.receiverAddress?.address;
+    
     await db.insert(orders).values({
       id,
       referenceId: doc.referenceId || `ORD-${Date.now()}`,
-      type: doc.orderType || 'OUTBOUND',
+      type: doc.type || 'OUTBOUND',  // Fixed: was doc.orderType
       customerId,
       status: doc.status || 'INITIATED',
       carrierId: getMappedId(doc.carrier),
+      poNumber: doc.poNumber || '',
+      palletCount: doc.palletCount || 0,
+      palletWeight: doc.palletWeight || 0,
+      binWeight: doc.binWeight || 0,
+      orderWeight: doc.orderWeight || 0,
+      requiredDate: parseDate(doc.requiredDate),
+      shipDate: parseDate(doc.shipDate),
+      receiverName: doc.receiverAddress?.name || null,
+      receiverAddressStreet: receiverAddress?.street || null,
+      receiverAddressCity: receiverAddress?.city || null,
+      receiverAddressState: receiverAddress?.state || null,
+      receiverAddressZipCode: receiverAddress?.zipCode || null,
+      receiverAddressCountry: receiverAddress?.country || null,
       createdBy,
+      updatedBy: getMappedId(doc.updatedBy),
       createdAt: parseDate(doc.createdAt),
       updatedAt: parseDate(doc.updatedAt),
     }).onConflictDoNothing();
@@ -364,7 +381,7 @@ async function importOrders() {
           id: convertId(item._id),
           orderId: id,
           productId,
-          requiredQuantity: item.quantity || 0,
+          requiredQuantity: item.requiredQuantity || 0,  // Fixed: was item.quantity
         }).onConflictDoNothing();
       }
     }
