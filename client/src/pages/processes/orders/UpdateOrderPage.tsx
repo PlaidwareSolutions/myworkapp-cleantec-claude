@@ -452,47 +452,71 @@ export default function UpdateOrderPage() {
             <Label className="text-muted-foreground text-sm">Delivery Address</Label>
             {isInitiated ? (
               order.type === "INBOUND" ? (
-                <Select 
-                  value={formData.receiverId || ""} 
-                  onValueChange={(value) => {
-                    setFormData({ 
-                      ...formData, 
-                      receiverId: value,
-                    });
-                  }}
-                >
-                  <SelectTrigger data-testid="select-delivery-address">
-                    <SelectValue placeholder="Select Warehouse">
-                      {formData.receiverId ? warehouses.find((w: any) => w.name === formData.receiverId)?.name || formData.receiverId : "Select Warehouse"}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {warehouses.map((w: any, idx: number) => (
-                      <SelectItem key={idx} value={w.name}>{w.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <>
+                  <Select 
+                    value={formData.receiverId || ""} 
+                    onValueChange={(value) => {
+                      setFormData({ 
+                        ...formData, 
+                        receiverId: value,
+                      });
+                    }}
+                  >
+                    <SelectTrigger data-testid="select-delivery-address">
+                      <SelectValue placeholder="Select Warehouse">
+                        {formData.receiverId ? warehouses.find((w: any) => w.name === formData.receiverId)?.name || formData.receiverId : "Select Warehouse"}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {warehouses.map((w: any, idx: number) => (
+                        <SelectItem key={idx} value={w.name}>{w.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {formData.receiverId && (() => {
+                    const warehouse = warehouses.find((w: any) => w.name === formData.receiverId);
+                    return warehouse?.address ? (
+                      <div className="p-3 border rounded-md bg-muted/50 mt-2">
+                        <p className="text-sm text-muted-foreground">
+                          {warehouse.address.street}, {warehouse.address.city}, {warehouse.address.state} {warehouse.address.zipCode}, {warehouse.address.country}
+                        </p>
+                      </div>
+                    ) : null;
+                  })()}
+                </>
               ) : (
-                <Select 
-                  value={formData.receiverId || ""} 
-                  onValueChange={(value) => {
-                    setFormData({ 
-                      ...formData, 
-                      receiverId: value,
-                    });
-                  }}
-                >
-                  <SelectTrigger data-testid="select-delivery-address">
-                    <SelectValue placeholder="Select Processor">
-                      {formData.receiverId ? contacts.find((c: any) => c.id === formData.receiverId)?.name : "Select Processor"}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {contacts.filter((c: any) => c.type === "PROCESSOR").map((c: any) => (
-                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <>
+                  <Select 
+                    value={formData.receiverId || ""} 
+                    onValueChange={(value) => {
+                      setFormData({ 
+                        ...formData, 
+                        receiverId: value,
+                      });
+                    }}
+                  >
+                    <SelectTrigger data-testid="select-delivery-address">
+                      <SelectValue placeholder="Select Processor">
+                        {formData.receiverId ? contacts.find((c: any) => c.id === formData.receiverId)?.name : "Select Processor"}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {contacts.filter((c: any) => c.type === "PROCESSOR").map((c: any) => (
+                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {formData.receiverId && (() => {
+                    const processor = contacts.find((c: any) => c.id === formData.receiverId && c.type === "PROCESSOR");
+                    return processor ? (
+                      <div className="p-3 border rounded-md bg-muted/50 mt-2">
+                        <p className="text-sm text-muted-foreground">
+                          {processor.addressStreet}, {processor.addressCity}, {processor.addressState} {processor.addressZipCode}, {processor.addressCountry || "USA"}
+                        </p>
+                      </div>
+                    ) : null;
+                  })()}
+                </>
               )
             ) : order.receiverName ? (
               <div className="p-3 border rounded-md bg-muted/50 mt-1">

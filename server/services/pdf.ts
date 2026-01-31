@@ -35,19 +35,21 @@ function addHeader(doc: InstanceType<typeof PDFDocument>) {
 }
 
 function addFooter(doc: InstanceType<typeof PDFDocument>) {
+  // Fixed footer position at bottom of current page (A4: 842 points height)
   const footerY = 760;
   
+  // Use lineBreak: false to prevent auto-pagination when writing at fixed positions
   if (fs.existsSync(MYWORKAPP_LOGO_PATH)) {
     doc.image(MYWORKAPP_LOGO_PATH, 260, footerY, { width: 30 });
-    doc.fontSize(8).font("Helvetica").text("Powered by MyWorkApp.io", 295, footerY + 8);
+    doc.fontSize(8).font("Helvetica").text("Powered by MyWorkApp.io", 295, footerY + 8, { lineBreak: false });
   } else {
-    doc.fontSize(8).font("Helvetica").text("Powered by MyWorkApp.io", 50, footerY, { align: "center" });
+    doc.fontSize(8).font("Helvetica").text("Powered by MyWorkApp.io", 50, footerY, { align: "center", lineBreak: false });
   }
   
   doc.fontSize(7).text(
     `Generated on ${new Date().toLocaleString()}`,
     50, footerY + 25,
-    { align: "center" }
+    { align: "center", lineBreak: false }
   );
 }
 
