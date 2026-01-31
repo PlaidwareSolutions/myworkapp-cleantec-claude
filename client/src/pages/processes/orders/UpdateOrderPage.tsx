@@ -21,7 +21,7 @@ export default function UpdateOrderPage() {
   const { toast } = useToast();
 
   const { data, isLoading } = useQuery<any>({
-    queryKey: ["/api/order", id],
+    queryKey: [`/api/order/${id}`],
     enabled: !!id,
   });
 
