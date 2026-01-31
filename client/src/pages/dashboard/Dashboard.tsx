@@ -69,7 +69,7 @@ export default function Dashboard() {
                 <Button
                   variant="outline"
                   className="gap-2"
-                  onClick={() => setLocation("/processes/orders/create")}
+                  onClick={() => setLocation("/processes/orders/add")}
                   data-testid="button-quick-create-order"
                 >
                   <Plus className="h-4 w-4" />
@@ -78,7 +78,7 @@ export default function Dashboard() {
                 <Button
                   variant="outline"
                   className="gap-2"
-                  onClick={() => setLocation("/admin/contacts")}
+                  onClick={() => setLocation("/setup/contacts/add")}
                   data-testid="button-quick-add-contact"
                 >
                   <Users className="h-4 w-4" />
@@ -87,7 +87,7 @@ export default function Dashboard() {
                 <Button
                   variant="outline"
                   className="gap-2"
-                  onClick={() => setLocation("/inventory/products")}
+                  onClick={() => setLocation("/setup/products/add")}
                   data-testid="button-quick-add-product"
                 >
                   <Package className="h-4 w-4" />
@@ -107,7 +107,7 @@ export default function Dashboard() {
             <Button
               variant="outline"
               className="gap-2"
-              onClick={() => setLocation("/tracking/shipments")}
+              onClick={() => setLocation("/processes/shipments")}
               data-testid="button-quick-view-shipments"
             >
               <Truck className="h-4 w-4" />
@@ -116,16 +116,16 @@ export default function Dashboard() {
             <Button
               variant="outline"
               className="gap-2"
-              onClick={() => setLocation("/inventory/assets")}
+              onClick={() => setLocation("/processes/inventory")}
               data-testid="button-quick-view-assets"
             >
               <Cpu className="h-4 w-4" />
-              View Assets
+              View Inventory
             </Button>
             <Button
               variant="outline"
               className="gap-2"
-              onClick={() => setLocation("/inventory/tags")}
+              onClick={() => setLocation("/setup/tags")}
               data-testid="button-quick-view-tags"
             >
               <Tags className="h-4 w-4" />
