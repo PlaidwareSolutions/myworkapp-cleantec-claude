@@ -301,16 +301,37 @@ export const insertCustomFieldSchema = createInsertSchema(customFields).omit({ i
 export type InsertCustomField = z.infer<typeof insertCustomFieldSchema>;
 export type CustomField = typeof customFields.$inferSelect;
 
+// Hierarchies table (parent container)
+export const hierarchies = pgTable("hierarchies", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: text("description"),
+  active: boolean("active").default(true),
+  createdBy: varchar("created_by", { length: 36 }),
+  updatedBy: varchar("updated_by", { length: 36 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertHierarchySchema = createInsertSchema(hierarchies).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertHierarchy = z.infer<typeof insertHierarchySchema>;
+export type Hierarchy = typeof hierarchies.$inferSelect;
+
 // Hierarchy Levels table
 export const hierarchyLevels = pgTable("hierarchy_levels", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
   name: varchar("name", { length: 100 }).notNull(),
-  level: integer("level").notNull(),
+  description: text("description"),
+  level: integer("level").notNull().default(1),
+  hierarchyId: varchar("hierarchy_id", { length: 36 }).references(() => hierarchies.id),
+  active: boolean("active").default(true),
   createdBy: varchar("created_by", { length: 36 }),
+  updatedBy: varchar("updated_by", { length: 36 }),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const insertHierarchyLevelSchema = createInsertSchema(hierarchyLevels).omit({ id: true, createdAt: true });
+export const insertHierarchyLevelSchema = createInsertSchema(hierarchyLevels).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertHierarchyLevel = z.infer<typeof insertHierarchyLevelSchema>;
 export type HierarchyLevel = typeof hierarchyLevels.$inferSelect;
 
@@ -318,13 +339,18 @@ export type HierarchyLevel = typeof hierarchyLevels.$inferSelect;
 export const hierarchyNodes = pgTable("hierarchy_nodes", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
   name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  hierarchyId: varchar("hierarchy_id", { length: 36 }).references(() => hierarchies.id),
   levelId: varchar("level_id", { length: 36 }).notNull().references(() => hierarchyLevels.id),
   parentId: varchar("parent_id", { length: 36 }),
+  active: boolean("active").default(true),
   createdBy: varchar("created_by", { length: 36 }),
+  updatedBy: varchar("updated_by", { length: 36 }),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const insertHierarchyNodeSchema = createInsertSchema(hierarchyNodes).omit({ id: true, createdAt: true });
+export const insertHierarchyNodeSchema = createInsertSchema(hierarchyNodes).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertHierarchyNode = z.infer<typeof insertHierarchyNodeSchema>;
 export type HierarchyNode = typeof hierarchyNodes.$inferSelect;
 

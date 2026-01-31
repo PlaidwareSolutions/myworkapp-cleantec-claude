@@ -3,13 +3,13 @@ import { eq, and, or, ilike, sql, desc, asc, inArray, count, isNull, ne } from "
 import {
   roles, contacts, products, tags, assets, assetEvents, orders, orderItems, orderEvents,
   bols, bolItems, bolTags, shipments, shipmentBols, settings, customFields,
-  hierarchyLevels, hierarchyNodes, assetHierarchyNodes,
+  hierarchies, hierarchyLevels, hierarchyNodes, assetHierarchyNodes,
   InsertRole, Role, InsertContact, Contact, InsertProduct, Product, InsertTag, Tag,
   InsertAsset, Asset, InsertAssetEvent, AssetEvent, InsertOrder, Order, InsertOrderItem, OrderItem,
   InsertOrderEvent, OrderEvent, InsertBol, Bol, InsertBolItem, BolItem, InsertBolTag, BolTag,
   InsertShipment, Shipment, InsertShipmentBol, ShipmentBol, InsertSettings, Settings,
-  InsertCustomField, CustomField, InsertHierarchyLevel, HierarchyLevel, InsertHierarchyNode, HierarchyNode,
-  SYSTEM_RESERVED_ID
+  InsertCustomField, CustomField, InsertHierarchy, Hierarchy, InsertHierarchyLevel, HierarchyLevel, 
+  InsertHierarchyNode, HierarchyNode, SYSTEM_RESERVED_ID
 } from "@shared/schema";
 
 export interface PaginationParams {
@@ -608,26 +608,86 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(customFields);
   }
 
-  // Hierarchy
+  // Hierarchies (parent container)
+  async createHierarchy(hierarchy: InsertHierarchy): Promise<Hierarchy> {
+    const [result] = await db.insert(hierarchies).values(hierarchy).returning();
+    return result;
+  }
+
+  async getHierarchies(): Promise<Hierarchy[]> {
+    return await db.select().from(hierarchies).orderBy(asc(hierarchies.name));
+  }
+
+  async getHierarchyById(id: string): Promise<Hierarchy | undefined> {
+    const [result] = await db.select().from(hierarchies).where(eq(hierarchies.id, id));
+    return result;
+  }
+
+  async updateHierarchy(id: string, data: Partial<InsertHierarchy>): Promise<Hierarchy | undefined> {
+    const [result] = await db.update(hierarchies).set({ ...data, updatedAt: new Date() }).where(eq(hierarchies.id, id)).returning();
+    return result;
+  }
+
+  async deleteHierarchy(id: string): Promise<boolean> {
+    const result = await db.delete(hierarchies).where(eq(hierarchies.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // Hierarchy Levels
   async createHierarchyLevel(level: InsertHierarchyLevel): Promise<HierarchyLevel> {
     const [result] = await db.insert(hierarchyLevels).values(level).returning();
     return result;
   }
 
-  async getHierarchyLevels(): Promise<HierarchyLevel[]> {
+  async getHierarchyLevels(hierarchyId?: string): Promise<HierarchyLevel[]> {
+    if (hierarchyId) {
+      return await db.select().from(hierarchyLevels).where(eq(hierarchyLevels.hierarchyId, hierarchyId)).orderBy(asc(hierarchyLevels.level));
+    }
     return await db.select().from(hierarchyLevels).orderBy(asc(hierarchyLevels.level));
   }
 
+  async getHierarchyLevelById(id: string): Promise<HierarchyLevel | undefined> {
+    const [result] = await db.select().from(hierarchyLevels).where(eq(hierarchyLevels.id, id));
+    return result;
+  }
+
+  async updateHierarchyLevel(id: string, data: Partial<InsertHierarchyLevel>): Promise<HierarchyLevel | undefined> {
+    const [result] = await db.update(hierarchyLevels).set({ ...data, updatedAt: new Date() }).where(eq(hierarchyLevels.id, id)).returning();
+    return result;
+  }
+
+  async deleteHierarchyLevel(id: string): Promise<boolean> {
+    const result = await db.delete(hierarchyLevels).where(eq(hierarchyLevels.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // Hierarchy Nodes
   async createHierarchyNode(node: InsertHierarchyNode): Promise<HierarchyNode> {
     const [result] = await db.insert(hierarchyNodes).values(node).returning();
     return result;
   }
 
-  async getHierarchyNodes(levelId?: string, parentId?: string): Promise<HierarchyNode[]> {
+  async getHierarchyNodes(hierarchyId?: string, levelId?: string, parentId?: string): Promise<HierarchyNode[]> {
     const conditions = [];
+    if (hierarchyId) conditions.push(eq(hierarchyNodes.hierarchyId, hierarchyId));
     if (levelId) conditions.push(eq(hierarchyNodes.levelId, levelId));
     if (parentId) conditions.push(eq(hierarchyNodes.parentId, parentId));
     return await db.select().from(hierarchyNodes).where(conditions.length > 0 ? and(...conditions) : undefined);
+  }
+
+  async getHierarchyNodeById(id: string): Promise<HierarchyNode | undefined> {
+    const [result] = await db.select().from(hierarchyNodes).where(eq(hierarchyNodes.id, id));
+    return result;
+  }
+
+  async updateHierarchyNode(id: string, data: Partial<InsertHierarchyNode>): Promise<HierarchyNode | undefined> {
+    const [result] = await db.update(hierarchyNodes).set({ ...data, updatedAt: new Date() }).where(eq(hierarchyNodes.id, id)).returning();
+    return result;
+  }
+
+  async deleteHierarchyNode(id: string): Promise<boolean> {
+    const result = await db.delete(hierarchyNodes).where(eq(hierarchyNodes.id, id));
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Stats

@@ -68,8 +68,13 @@ A comprehensive PostgreSQL-based API for asset tracking, order management, and l
 
 ### Settings & Hierarchy
 - `GET/PUT /api/settings` - Application settings
+- `GET/POST /api/hierarchy` - Hierarchies (parent containers)
+- `GET/PUT/DELETE /api/hierarchy/:id` - Single hierarchy operations
+- `GET /api/hierarchy/:id/tree` - Full hierarchy tree
 - `GET/POST /api/hierarchy/levels` - Hierarchy levels
+- `PUT/DELETE /api/hierarchy/levels/:id` - Level operations
 - `GET/POST /api/hierarchy/nodes` - Hierarchy nodes
+- `PUT/DELETE /api/hierarchy/nodes/:id` - Node operations
 
 ## Tech Stack
 - **Backend**: Express + TypeScript
@@ -82,7 +87,7 @@ A comprehensive PostgreSQL-based API for asset tracking, order management, and l
 - **CSV Parsing**: csv-parse
 
 ## Database Schema
-15+ tables including:
+17+ tables including:
 - `roles` - User roles with permissions
 - `contacts` - Customers, carriers, processors with system user auth
 - `products` - Product catalog
@@ -94,7 +99,8 @@ A comprehensive PostgreSQL-based API for asset tracking, order management, and l
 - `shipments` / `shipment_bols` - Shipment tracking
 - `settings` - Application configuration
 - `custom_fields` - Custom field definitions
-- `hierarchy_levels` / `hierarchy_nodes` - Organizational hierarchy
+- `hierarchies` - Parent container for hierarchy structures
+- `hierarchy_levels` / `hierarchy_nodes` - Organizational hierarchy with parent reference
 
 ## Environment Variables
 - `DATABASE_URL` - PostgreSQL connection string (auto-configured)
