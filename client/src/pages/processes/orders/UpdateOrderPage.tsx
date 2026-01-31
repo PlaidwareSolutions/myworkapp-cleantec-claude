@@ -47,6 +47,10 @@ export default function UpdateOrderPage() {
     shipDate: "",
     driverName: "",
     trailerId: "",
+    palletCount: 0,
+    orderWeight: 0,
+    receiverId: "",
+    items: [] as { productId: string; requiredQuantity: number }[],
   });
 
   const { data, isLoading, refetch } = useQuery<any>({
@@ -87,6 +91,13 @@ export default function UpdateOrderPage() {
         shipDate: order.shipDate ? order.shipDate.split("T")[0] : "",
         driverName: "",
         trailerId: "",
+        palletCount: order.palletCount || 0,
+        orderWeight: order.orderWeight || 0,
+        receiverId: order.receiverId || "",
+        items: order.items?.map((item: any) => ({
+          productId: item.productId,
+          requiredQuantity: item.requiredQuantity,
+        })) || [],
       });
     }
   }, [order]);
@@ -171,6 +182,31 @@ export default function UpdateOrderPage() {
       if (formData.poNumber !== undefined) updateData.poNumber = formData.poNumber;
       if (formData.requiredDate) updateData.requiredDate = formData.requiredDate;
       if (formData.shipDate) updateData.shipDate = formData.shipDate;
+      
+      // Include items for recalculating weights
+      if (formData.items?.length > 0) {
+        updateData.items = formData.items.map(item => ({
+          productId: item.productId,
+          requiredQuantity: item.requiredQuantity,
+        }));
+      }
+      
+      // Include receiver address from selected processor
+      if (formData.receiverId) {
+        const processor = contacts.find((c: any) => c.id === formData.receiverId && c.type === "PROCESSOR");
+        if (processor) {
+          updateData.receiverAddress = {
+            name: processor.name,
+            address: {
+              street: processor.addressStreet || "",
+              city: processor.addressCity || "",
+              state: processor.addressState || "",
+              zipCode: processor.addressZipCode || "",
+              country: processor.addressCountry || "USA",
+            }
+          };
+        }
+      }
     }
     
     if (isOutboundApproved) {
@@ -316,7 +352,7 @@ export default function UpdateOrderPage() {
                 onValueChange={(value) => setFormData({ ...formData, customerId: value })}
                 disabled={!isInitiated}
               >
-                <SelectTrigger data-testid="select-customer">
+                <SelectTrigger data-testid="select-customer" className={!isInitiated ? "bg-muted" : ""}>
                   <SelectValue placeholder="Select customer" />
                 </SelectTrigger>
                 <SelectContent>
@@ -333,7 +369,7 @@ export default function UpdateOrderPage() {
                 onValueChange={(value) => setFormData({ ...formData, carrierId: value })}
                 disabled={!isInitiated}
               >
-                <SelectTrigger data-testid="select-carrier">
+                <SelectTrigger data-testid="select-carrier" className={!isInitiated ? "bg-muted" : ""}>
                   <SelectValue placeholder="Select carrier" />
                 </SelectTrigger>
                 <SelectContent>
@@ -353,6 +389,7 @@ export default function UpdateOrderPage() {
                 value={formData.requiredDate}
                 onChange={(e) => setFormData({ ...formData, requiredDate: e.target.value })}
                 disabled={!isInitiated}
+                className={!isInitiated ? "bg-muted" : ""}
                 data-testid="input-required-date"
               />
             </div>
@@ -363,6 +400,7 @@ export default function UpdateOrderPage() {
                 value={formData.shipDate}
                 onChange={(e) => setFormData({ ...formData, shipDate: e.target.value })}
                 disabled={!isInitiated}
+                className={!isInitiated ? "bg-muted" : ""}
                 placeholder="Select date"
                 data-testid="input-ship-date"
               />
@@ -387,34 +425,69 @@ export default function UpdateOrderPage() {
                 value={formData.poNumber}
                 onChange={(e) => setFormData({ ...formData, poNumber: e.target.value })}
                 disabled={!isInitiated}
+                className={!isInitiated ? "bg-muted" : ""}
                 placeholder="Enter PO Number"
                 data-testid="input-po-number"
               />
             </div>
           </div>
 
-          {order.receiverName && (
-            <div>
-              <Label className="text-muted-foreground text-sm">Delivery Address</Label>
+          <div>
+            <Label className="text-muted-foreground text-sm">Delivery Address</Label>
+            {isInitiated ? (
+              <Select 
+                value={formData.receiverId || ""} 
+                onValueChange={(value) => {
+                  const processor = contacts.find((c: any) => c.id === value && c.type === "PROCESSOR");
+                  if (processor) {
+                    setFormData({ 
+                      ...formData, 
+                      receiverId: value,
+                    });
+                  }
+                }}
+              >
+                <SelectTrigger data-testid="select-delivery-address">
+                  <SelectValue placeholder="Select Cleantec Address">
+                    {formData.receiverId ? contacts.find((c: any) => c.id === formData.receiverId)?.name : "Select Cleantec Address"}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {contacts.filter((c: any) => c.type === "PROCESSOR").map((c: any) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : order.receiverName ? (
               <div className="p-3 border rounded-md bg-muted/50 mt-1">
                 <p className="font-medium">Name: {order.receiverName}</p>
                 <p className="text-sm text-muted-foreground">
                   Address: {order.receiverAddressStreet}, {order.receiverAddressCity}, {order.receiverAddressState} - {order.receiverAddressZipCode}, {order.receiverAddressCountry}
                 </p>
               </div>
-            </div>
-          )}
+            ) : (
+              <Input value="No address set" disabled className="bg-muted mt-1" />
+            )}
+          </div>
 
           <div className="border-t pt-6">
             <h3 className="font-semibold text-lg mb-4">Items</h3>
-            {order.items?.length > 0 ? (
-              order.items.map((item: any, index: number) => (
+            {formData.items?.length > 0 ? (
+              formData.items.map((item, index: number) => (
                 <div key={index} className="space-y-4" data-testid={`item-row-${index}`}>
                   <div className="grid gap-4 md:grid-cols-2">
                     <div>
                       <Label className="text-muted-foreground text-sm">* Product</Label>
-                      <Select value={item.productId} disabled>
-                        <SelectTrigger data-testid={`select-product-${index}`}>
+                      <Select 
+                        value={item.productId} 
+                        onValueChange={(value) => {
+                          const newItems = [...formData.items];
+                          newItems[index] = { ...newItems[index], productId: value };
+                          setFormData({ ...formData, items: newItems });
+                        }}
+                        disabled={!isInitiated}
+                      >
+                        <SelectTrigger data-testid={`select-product-${index}`} className={!isInitiated ? "bg-muted" : ""}>
                           <SelectValue>{getProductName(item.productId)}</SelectValue>
                         </SelectTrigger>
                         <SelectContent>
@@ -429,27 +502,33 @@ export default function UpdateOrderPage() {
                       <Input 
                         type="number"
                         value={item.requiredQuantity}
-                        disabled
+                        onChange={(e) => {
+                          const newItems = [...formData.items];
+                          newItems[index] = { ...newItems[index], requiredQuantity: parseInt(e.target.value) || 0 };
+                          setFormData({ ...formData, items: newItems });
+                        }}
+                        disabled={!isInitiated}
+                        className={!isInitiated ? "bg-muted" : ""}
                         data-testid={`input-required-quantity-${index}`}
                       />
                     </div>
                   </div>
                   <div className="grid gap-4 md:grid-cols-2">
                     <div>
-                      <Label className="text-muted-foreground text-sm">Pallet Count</Label>
+                      <Label className="text-muted-foreground text-sm">Pallet Count (auto-calculated)</Label>
                       <Input 
                         type="number"
-                        value={order.palletCount || 0}
+                        value={formData.palletCount}
                         disabled
                         className="bg-muted"
                         data-testid="input-pallet-count"
                       />
                     </div>
                     <div>
-                      <Label className="text-muted-foreground text-sm">Order Weight(lb)</Label>
+                      <Label className="text-muted-foreground text-sm">Order Weight(lb) (auto-calculated)</Label>
                       <Input 
                         type="number"
-                        value={order.orderWeight || 0}
+                        value={formData.orderWeight}
                         disabled
                         className="bg-muted"
                         data-testid="input-order-weight"
