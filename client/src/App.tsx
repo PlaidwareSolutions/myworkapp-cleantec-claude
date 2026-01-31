@@ -13,6 +13,7 @@ import OrdersPage from "@/pages/processes/orders/OrdersPage";
 import AddOrderPage from "@/pages/processes/orders/AddOrderPage";
 import UpdateOrderPage from "@/pages/processes/orders/UpdateOrderPage";
 import ShipmentsPage from "@/pages/processes/shipments/ShipmentsPage";
+import AddShipmentPage from "@/pages/processes/shipments/AddShipmentPage";
 import InventoryPage from "@/pages/processes/inventory/InventoryPage";
 import ProductsPage from "@/pages/setup/products/ProductsPage";
 import AddProductPage from "@/pages/setup/products/AddProductPage";
@@ -75,6 +76,11 @@ function AppRoutes() {
           <Route path="/processes/shipments">
             <ProtectedRoute permissions={["OrderViewAll", "OrderViewSelf"]}>
               <ShipmentsPage />
+            </ProtectedRoute>
+          </Route>
+          <Route path="/processes/shipments/add/:orderId">
+            <ProtectedRoute permissions={["OrderManagement"]}>
+              <AddShipmentPage />
             </ProtectedRoute>
           </Route>
           
