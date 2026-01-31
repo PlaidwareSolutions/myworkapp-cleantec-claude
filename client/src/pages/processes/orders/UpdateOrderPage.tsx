@@ -255,7 +255,10 @@ export default function UpdateOrderPage() {
             <h1 className="text-3xl font-bold tracking-tight">{order.referenceId}</h1>
             <p className="text-muted-foreground">Order Details</p>
           </div>
-          <Badge className={statusColors[order.status] || ""}>{order.status}</Badge>
+          <div className="flex flex-col gap-1">
+            <Badge variant="outline" className="justify-center" data-testid="badge-type">{order.type}</Badge>
+            <Badge className={statusColors[order.status] || ""} data-testid="badge-status">{order.status}</Badge>
+          </div>
         </div>
         <div className="flex gap-2 flex-wrap">
           {canCancel && (
@@ -333,14 +336,10 @@ export default function UpdateOrderPage() {
 
       <Card>
         <CardContent className="p-6 space-y-6">
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2">
             <div>
               <Label className="text-muted-foreground text-sm">Order ID</Label>
               <Input value={order.referenceId} disabled className="bg-muted" data-testid="input-reference-id" />
-            </div>
-            <div>
-              <Label className="text-muted-foreground text-sm">Type</Label>
-              <Input value={order.type} disabled className="bg-muted" data-testid="input-type" />
             </div>
             <div>
               <Label className="text-muted-foreground text-sm">Status</Label>
