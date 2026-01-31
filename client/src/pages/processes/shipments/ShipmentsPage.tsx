@@ -1,17 +1,24 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Truck, Download, FileText, ChevronDown, ChevronRight, Package } from "lucide-react";
+import { Truck, Download, FileText, ChevronDown, ChevronRight, Search, X, Filter } from "lucide-react";
 import { bolsApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+
+type StatusFilter = "ALL" | "SHIPPED" | "DELIVERED" | "PENDING";
+type TypeFilter = "ALL" | "INBOUND" | "OUTBOUND";
 
 export default function ShipmentsPage() {
   const { toast } = useToast();
   const [expandedShipments, setExpandedShipments] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>("ALL");
 
   const { data: shipmentsData, isLoading: shipmentsLoading } = useQuery<any>({
     queryKey: ["/api/tracking/shipment"],
@@ -28,6 +35,30 @@ export default function ShipmentsPage() {
   bols.forEach((bol: any) => {
     bolsMap.set(bol.id, bol);
   });
+
+  const filteredShipments = useMemo(() => {
+    return shipments.filter((shipment: any) => {
+      const searchLower = searchQuery.toLowerCase();
+      const matchesSearch = !searchQuery || 
+        shipment.referenceId?.toLowerCase().includes(searchLower) ||
+        shipment.carrier?.name?.toLowerCase().includes(searchLower) ||
+        shipment.driverName?.toLowerCase().includes(searchLower) ||
+        (shipment.bols || []).some((bolId: string) => {
+          const bol = bolsMap.get(bolId);
+          return bol?.referenceId?.toLowerCase().includes(searchLower) ||
+                 bol?.order?.referenceId?.toLowerCase().includes(searchLower) ||
+                 bol?.order?.customer?.name?.toLowerCase().includes(searchLower);
+        });
+
+      const matchesStatus = statusFilter === "ALL" || 
+        shipment.shipmentStatus?.toUpperCase() === statusFilter;
+
+      const matchesType = typeFilter === "ALL" || 
+        shipment.orderType?.toUpperCase() === typeFilter;
+
+      return matchesSearch && matchesStatus && matchesType;
+    });
+  }, [shipments, searchQuery, statusFilter, typeFilter, bolsMap]);
 
   const toggleShipment = (shipmentId: string) => {
     setExpandedShipments(prev => {
@@ -68,7 +99,36 @@ export default function ShipmentsPage() {
     }
   };
 
+  const clearFilters = () => {
+    setSearchQuery("");
+    setStatusFilter("ALL");
+    setTypeFilter("ALL");
+  };
+
+  const hasActiveFilters = searchQuery || statusFilter !== "ALL" || typeFilter !== "ALL";
+
   const isLoading = shipmentsLoading || bolsLoading;
+
+  const statusCounts = useMemo(() => {
+    const counts = { ALL: shipments.length, SHIPPED: 0, DELIVERED: 0, PENDING: 0 };
+    shipments.forEach((s: any) => {
+      const status = s.shipmentStatus?.toUpperCase();
+      if (status === "SHIPPED") counts.SHIPPED++;
+      else if (status === "DELIVERED") counts.DELIVERED++;
+      else counts.PENDING++;
+    });
+    return counts;
+  }, [shipments]);
+
+  const typeCounts = useMemo(() => {
+    const counts = { ALL: shipments.length, INBOUND: 0, OUTBOUND: 0 };
+    shipments.forEach((s: any) => {
+      const type = s.orderType?.toUpperCase();
+      if (type === "INBOUND") counts.INBOUND++;
+      else if (type === "OUTBOUND") counts.OUTBOUND++;
+    });
+    return counts;
+  }, [shipments]);
 
   return (
     <div className="space-y-6">
@@ -89,11 +149,75 @@ export default function ShipmentsPage() {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Truck className="h-5 w-5" />
-            Shipments
-          </CardTitle>
+        <CardHeader className="pb-4">
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Truck className="h-5 w-5" />
+                Shipments
+              </CardTitle>
+              {hasActiveFilters && (
+                <Button variant="ghost" size="sm" onClick={clearFilters} data-testid="button-clear-filters">
+                  <X className="h-4 w-4 mr-1" />
+                  Clear Filters
+                </Button>
+              )}
+            </div>
+
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by reference ID, carrier, driver, order, or customer..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+                data-testid="input-search-shipments"
+              />
+            </div>
+
+            <div className="flex flex-wrap gap-4">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Status:</span>
+                <div className="flex gap-1">
+                  {(["ALL", "SHIPPED", "DELIVERED", "PENDING"] as StatusFilter[]).map((status) => (
+                    <Button
+                      key={status}
+                      variant={statusFilter === status ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setStatusFilter(status)}
+                      data-testid={`filter-status-${status.toLowerCase()}`}
+                    >
+                      {status === "ALL" ? "All" : status.charAt(0) + status.slice(1).toLowerCase()}
+                      <Badge variant="secondary" className="ml-1 text-xs">
+                        {statusCounts[status]}
+                      </Badge>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Type:</span>
+                <div className="flex gap-1">
+                  {(["ALL", "INBOUND", "OUTBOUND"] as TypeFilter[]).map((type) => (
+                    <Button
+                      key={type}
+                      variant={typeFilter === type ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setTypeFilter(type)}
+                      data-testid={`filter-type-${type.toLowerCase()}`}
+                    >
+                      {type === "ALL" ? "All" : type.charAt(0) + type.slice(1).toLowerCase()}
+                      <Badge variant="secondary" className="ml-1 text-xs">
+                        {typeCounts[type]}
+                      </Badge>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -102,14 +226,26 @@ export default function ShipmentsPage() {
                 <Skeleton key={i} className="h-20 w-full" />
               ))}
             </div>
-          ) : shipments.length === 0 ? (
+          ) : filteredShipments.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Truck className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>No shipments found</p>
+              {hasActiveFilters ? (
+                <>
+                  <p>No shipments match your filters</p>
+                  <Button variant="ghost" onClick={clearFilters} className="mt-2">
+                    Clear filters
+                  </Button>
+                </>
+              ) : (
+                <p>No shipments found</p>
+              )}
             </div>
           ) : (
             <div className="space-y-3">
-              {shipments.map((shipment: any) => {
+              <div className="text-sm text-muted-foreground mb-2">
+                Showing {filteredShipments.length} of {shipments.length} shipments
+              </div>
+              {filteredShipments.map((shipment: any) => {
                 const shipmentBols = (shipment.bols || [])
                   .map((bolId: string) => bolsMap.get(bolId))
                   .filter(Boolean);
@@ -139,14 +275,14 @@ export default function ShipmentsPage() {
                               <div className="w-4" />
                             )}
                             <div>
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 flex-wrap">
                                 <p className="font-semibold">{shipment.referenceId}</p>
                                 <Badge className={getStatusColor(shipment.shipmentStatus)}>
                                   {shipment.shipmentStatus || "PENDING"}
                                 </Badge>
                                 <Badge variant="outline">{shipment.orderType}</Badge>
                               </div>
-                              <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                              <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1 flex-wrap">
                                 <span>Carrier: {shipment.carrier?.name || "N/A"}</span>
                                 <span>Date: {new Date(shipment.shipmentDate || shipment.createdAt).toLocaleDateString()}</span>
                                 {shipment.driverName && <span>Driver: {shipment.driverName}</span>}
@@ -181,7 +317,7 @@ export default function ShipmentsPage() {
                                   <FileText className="h-4 w-4 text-muted-foreground" />
                                   <div>
                                     <p className="font-medium">{bol.referenceId}</p>
-                                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                                    <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
                                       {bol.order && (
                                         <span>Order: {bol.order.referenceId}</span>
                                       )}
