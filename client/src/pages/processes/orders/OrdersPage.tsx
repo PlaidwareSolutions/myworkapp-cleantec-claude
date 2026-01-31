@@ -23,6 +23,11 @@ import { Plus, Search, FileText, Check, X, Truck, Download, Filter } from "lucid
 type StatusFilter = "ALL" | "INITIATED" | "APPROVED" | "SHIPPED" | "SHIPPED-PARTIAL" | "RECEIVED" | "RETURNED" | "CANCELLED";
 type TypeFilter = "ALL" | "INBOUND" | "OUTBOUND";
 
+const typeColors: Record<string, string> = {
+  INBOUND: "bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-700",
+  OUTBOUND: "bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-900 dark:text-purple-200 dark:border-purple-700",
+};
+
 const statusColors: Record<string, string> = {
   INITIATED: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
   APPROVED: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
@@ -276,7 +281,7 @@ export default function OrdersPage() {
                       <TableCell>{order.customer?.name || "-"}</TableCell>
                       <TableCell>{order.carrier?.name || "-"}</TableCell>
                       <TableCell>
-                        <Badge variant="outline">{order.type}</Badge>
+                        <Badge className={typeColors[order.type?.toUpperCase()] || ""}>{order.type}</Badge>
                       </TableCell>
                       <TableCell>
                         <Badge className={statusColors[order.status] || ""}>
