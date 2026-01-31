@@ -1,9 +1,15 @@
 import PDFDocument from "pdfkit";
+import type { PDFDocument as PDFDocumentType } from "pdfkit";
 import { Order, OrderItem, Contact, Bol, BolItem, Settings } from "@shared/schema";
 import { storage } from "../storage";
+import path from "path";
+import fs from "fs";
 
 const COMPANY_NAME = "CleanTech Asset Tracking";
 const COMPANY_ADDRESS = "123 Clean Street, Green City, EC 12345";
+
+const CLEANTEC_LOGO_PATH = path.join(process.cwd(), "server/assets/cleantec-logo.png");
+const MYWORKAPP_LOGO_PATH = path.join(process.cwd(), "server/assets/myworkapp-icon.png");
 
 function formatDate(date: Date | null | undefined): string {
   if (!date) return "N/A";
@@ -12,6 +18,37 @@ function formatDate(date: Date | null | undefined): string {
     month: "long",
     day: "numeric",
   });
+}
+
+function addHeader(doc: InstanceType<typeof PDFDocument>) {
+  const startY = 30;
+  
+  if (fs.existsSync(CLEANTEC_LOGO_PATH)) {
+    doc.image(CLEANTEC_LOGO_PATH, 220, startY, { width: 150 });
+    doc.y = startY + 60;
+  } else {
+    doc.fontSize(24).font("Helvetica-Bold").text(COMPANY_NAME, 50, startY, { align: "center" });
+  }
+  
+  doc.fontSize(10).font("Helvetica").text(COMPANY_ADDRESS, 50, doc.y, { align: "center" });
+  doc.moveDown();
+}
+
+function addFooter(doc: InstanceType<typeof PDFDocument>) {
+  const footerY = 760;
+  
+  if (fs.existsSync(MYWORKAPP_LOGO_PATH)) {
+    doc.image(MYWORKAPP_LOGO_PATH, 260, footerY, { width: 30 });
+    doc.fontSize(8).font("Helvetica").text("Powered by MyWorkApp.io", 295, footerY + 8);
+  } else {
+    doc.fontSize(8).font("Helvetica").text("Powered by MyWorkApp.io", 50, footerY, { align: "center" });
+  }
+  
+  doc.fontSize(7).text(
+    `Generated on ${new Date().toLocaleString()}`,
+    50, footerY + 25,
+    { align: "center" }
+  );
 }
 
 export async function generateOrderPdf(
@@ -29,56 +66,54 @@ export async function generateOrderPdf(
       doc.on("end", () => resolve(Buffer.concat(chunks)));
       doc.on("error", reject);
 
-      // Header
-      doc.fontSize(24).font("Helvetica-Bold").text(COMPANY_NAME, { align: "center" });
-      doc.fontSize(10).font("Helvetica").text(COMPANY_ADDRESS, { align: "center" });
-      doc.moveDown();
+      addHeader(doc);
 
-      // Title
       doc.fontSize(18).font("Helvetica-Bold").text("ORDER CONFIRMATION", { align: "center" });
-      doc.moveDown();
+      doc.moveDown(1.5);
 
-      // Order Info Box
       doc.fontSize(12).font("Helvetica-Bold").text("Order Information");
+      doc.moveDown(0.3);
       doc.fontSize(10).font("Helvetica");
-      doc.rect(50, doc.y, 495, 80).stroke();
-      const orderInfoY = doc.y + 10;
       
-      doc.text(`Order Reference: ${order.referenceId || "N/A"}`, 60, orderInfoY);
-      doc.text(`PO Number: ${order.poNumber || "N/A"}`, 60, orderInfoY + 15);
-      doc.text(`Order Type: ${order.type}`, 60, orderInfoY + 30);
-      doc.text(`Status: ${order.status}`, 60, orderInfoY + 45);
+      const orderBoxY = doc.y;
+      doc.rect(50, orderBoxY, 495, 85).stroke();
       
-      doc.text(`Required Date: ${formatDate(order.requiredDate)}`, 300, orderInfoY);
-      doc.text(`Ship Date: ${formatDate(order.shipDate)}`, 300, orderInfoY + 15);
-      doc.text(`Created: ${formatDate(order.createdAt)}`, 300, orderInfoY + 30);
+      doc.text(`Order Reference: ${order.referenceId || "N/A"}`, 60, orderBoxY + 10);
+      doc.text(`PO Number: ${order.poNumber || "N/A"}`, 60, orderBoxY + 25);
+      doc.text(`Order Type: ${order.type}`, 60, orderBoxY + 40);
+      doc.text(`Status: ${order.status}`, 60, orderBoxY + 55);
       
-      doc.y = orderInfoY + 70;
+      doc.text(`Required Date: ${formatDate(order.requiredDate)}`, 300, orderBoxY + 10);
+      doc.text(`Ship Date: ${formatDate(order.shipDate)}`, 300, orderBoxY + 25);
+      doc.text(`Created: ${formatDate(order.createdAt)}`, 300, orderBoxY + 40);
+      
+      doc.y = orderBoxY + 95;
       doc.moveDown();
 
-      // Customer Info
-      doc.fontSize(12).font("Helvetica-Bold").text("Customer Information");
+      const infoSectionY = doc.y;
+      
+      doc.fontSize(12).font("Helvetica-Bold").text("Customer Information", 50, infoSectionY);
+      doc.moveDown(0.3);
+      const customerBoxY = doc.y;
       doc.fontSize(10).font("Helvetica");
-      doc.rect(50, doc.y, 240, 60).stroke();
-      const customerInfoY = doc.y + 10;
-      doc.text(`Name: ${customer.name}`, 60, customerInfoY);
-      doc.text(`Email: ${customer.email?.join(", ") || "N/A"}`, 60, customerInfoY + 15);
-      doc.text(`Phone: ${customer.phone?.join(", ") || "N/A"}`, 60, customerInfoY + 30);
+      doc.rect(50, customerBoxY, 230, 65).stroke();
+      doc.text(`Name: ${customer.name}`, 60, customerBoxY + 10);
+      doc.text(`Email: ${customer.email?.join(", ") || "N/A"}`, 60, customerBoxY + 25);
+      doc.text(`Phone: ${customer.phone?.join(", ") || "N/A"}`, 60, customerBoxY + 40);
 
-      // Carrier Info
-      doc.fontSize(12).font("Helvetica-Bold").text("Carrier Information", 305, customerInfoY - 20);
+      doc.fontSize(12).font("Helvetica-Bold").text("Carrier Information", 310, infoSectionY);
       doc.fontSize(10).font("Helvetica");
-      doc.rect(305, customerInfoY - 10, 240, 60).stroke();
-      doc.text(`Name: ${carrier?.name || "N/A"}`, 315, customerInfoY);
-      doc.text(`Email: ${carrier?.email?.join(", ") || "N/A"}`, 315, customerInfoY + 15);
-      doc.text(`Phone: ${carrier?.phone?.join(", ") || "N/A"}`, 315, customerInfoY + 30);
+      doc.rect(310, customerBoxY, 235, 65).stroke();
+      doc.text(`Name: ${carrier?.name || "N/A"}`, 320, customerBoxY + 10);
+      doc.text(`Email: ${carrier?.email?.join(", ") || "N/A"}`, 320, customerBoxY + 25);
+      doc.text(`Phone: ${carrier?.phone?.join(", ") || "N/A"}`, 320, customerBoxY + 40);
 
-      doc.y = customerInfoY + 60;
-      doc.moveDown(2);
+      doc.y = customerBoxY + 75;
+      doc.moveDown();
 
-      // Receiver Address (if outbound)
       if (order.receiverName) {
         doc.fontSize(12).font("Helvetica-Bold").text("Delivery Address");
+        doc.moveDown(0.3);
         doc.fontSize(10).font("Helvetica");
         doc.text(order.receiverName || "");
         if (order.receiverAddressStreet) doc.text(order.receiverAddressStreet);
@@ -92,20 +127,17 @@ export async function generateOrderPdf(
         doc.moveDown();
       }
 
-      // Items Table
       doc.fontSize(12).font("Helvetica-Bold").text("Order Items");
       doc.moveDown(0.5);
 
-      // Table Header
       const tableTop = doc.y;
       const tableLeft = 50;
       doc.rect(tableLeft, tableTop, 495, 20).fill("#f0f0f0");
       doc.fillColor("#000000");
       doc.fontSize(10).font("Helvetica-Bold");
       doc.text("Product", tableLeft + 10, tableTop + 5);
-      doc.text("Required Qty", tableLeft + 350, tableTop + 5);
+      doc.text("Required Qty", tableLeft + 380, tableTop + 5);
 
-      // Table Rows
       let rowY = tableTop + 25;
       doc.font("Helvetica");
 
@@ -113,32 +145,25 @@ export async function generateOrderPdf(
       for (const item of items) {
         const product = await storage.getProductById(item.productId);
         doc.text(product?.name || item.productId, tableLeft + 10, rowY);
-        doc.text(String(item.requiredQuantity || 0), tableLeft + 350, rowY);
+        doc.text(String(item.requiredQuantity || 0), tableLeft + 380, rowY);
         totalQuantity += item.requiredQuantity || 0;
         rowY += 20;
       }
 
-      // Total row
       doc.rect(tableLeft, rowY, 495, 20).fill("#e0e0e0");
       doc.fillColor("#000000");
       doc.font("Helvetica-Bold");
       doc.text("TOTAL", tableLeft + 10, rowY + 5);
-      doc.text(String(totalQuantity), tableLeft + 350, rowY + 5);
+      doc.text(String(totalQuantity), tableLeft + 380, rowY + 5);
 
       doc.y = rowY + 40;
       doc.moveDown();
 
-      // Weight Information
       doc.fontSize(10).font("Helvetica");
       doc.text(`Pallet Count: ${order.palletCount || 0}`);
       doc.text(`Total Weight: ${order.orderWeight?.toFixed(2) || 0} lbs`);
 
-      // Footer
-      doc.y = 750;
-      doc.fontSize(8).text(
-        `Generated on ${new Date().toLocaleString()} | ${COMPANY_NAME}`,
-        { align: "center" }
-      );
+      addFooter(doc);
 
       doc.end();
     } catch (error) {
@@ -164,88 +189,83 @@ export async function generateBolPdf(
       doc.on("end", () => resolve(Buffer.concat(chunks)));
       doc.on("error", reject);
 
-      // Header
-      doc.fontSize(24).font("Helvetica-Bold").text(COMPANY_NAME, { align: "center" });
-      doc.fontSize(10).font("Helvetica").text(COMPANY_ADDRESS, { align: "center" });
-      doc.moveDown();
+      addHeader(doc);
 
-      // Title
       doc.fontSize(18).font("Helvetica-Bold").text("BILL OF LADING", { align: "center" });
-      doc.moveDown();
+      doc.moveDown(1.5);
 
-      // BOL Info Box
       doc.fontSize(12).font("Helvetica-Bold").text("BOL Information");
+      doc.moveDown(0.3);
       doc.fontSize(10).font("Helvetica");
-      doc.rect(50, doc.y, 495, 60).stroke();
-      const bolInfoY = doc.y + 10;
       
-      doc.text(`BOL Reference: ${bol.referenceId || "N/A"}`, 60, bolInfoY);
-      doc.text(`Order Reference: ${order.referenceId || "N/A"}`, 60, bolInfoY + 15);
-      doc.text(`PO Number: ${order.poNumber || "N/A"}`, 60, bolInfoY + 30);
+      const bolBoxY = doc.y;
+      doc.rect(50, bolBoxY, 495, 65).stroke();
       
-      doc.text(`Order Type: ${bol.orderType}`, 300, bolInfoY);
-      doc.text(`Created: ${formatDate(bol.createdAt)}`, 300, bolInfoY + 15);
+      doc.text(`BOL Reference: ${bol.referenceId || "N/A"}`, 60, bolBoxY + 10);
+      doc.text(`Order Reference: ${order.referenceId || "N/A"}`, 60, bolBoxY + 25);
+      doc.text(`PO Number: ${order.poNumber || "N/A"}`, 60, bolBoxY + 40);
+      
+      doc.text(`Order Type: ${bol.orderType}`, 300, bolBoxY + 10);
+      doc.text(`Created: ${formatDate(bol.createdAt)}`, 300, bolBoxY + 25);
 
-      doc.y = bolInfoY + 50;
+      doc.y = bolBoxY + 75;
       doc.moveDown();
 
-      // Shipper Info
       const warehouses = settings?.warehouses || [];
       const shipper = warehouses[0] || { name: COMPANY_NAME, address: { street: "", city: "", state: "", zipCode: "", country: "" } };
 
-      doc.fontSize(12).font("Helvetica-Bold").text("Shipper");
+      const addressSectionY = doc.y;
+      
+      doc.fontSize(12).font("Helvetica-Bold").text("Shipper", 50, addressSectionY);
+      doc.moveDown(0.3);
+      const shipperBoxY = doc.y;
       doc.fontSize(10).font("Helvetica");
-      doc.rect(50, doc.y, 240, 70).stroke();
-      const shipperInfoY = doc.y + 10;
-      doc.text(shipper.name, 60, shipperInfoY);
-      doc.text(shipper.address?.street || "", 60, shipperInfoY + 15);
+      doc.rect(50, shipperBoxY, 230, 75).stroke();
+      doc.text(shipper.name, 60, shipperBoxY + 10);
+      doc.text(shipper.address?.street || "", 60, shipperBoxY + 25);
       const shipperCityStateZip = [
         shipper.address?.city,
         shipper.address?.state,
         shipper.address?.zipCode,
       ].filter(Boolean).join(", ");
-      doc.text(shipperCityStateZip, 60, shipperInfoY + 30);
-      doc.text(shipper.address?.country || "", 60, shipperInfoY + 45);
+      doc.text(shipperCityStateZip, 60, shipperBoxY + 40);
+      doc.text(shipper.address?.country || "", 60, shipperBoxY + 55);
 
-      // Consignee Info
-      doc.fontSize(12).font("Helvetica-Bold").text("Consignee", 305, shipperInfoY - 20);
+      doc.fontSize(12).font("Helvetica-Bold").text("Consignee", 310, addressSectionY);
       doc.fontSize(10).font("Helvetica");
-      doc.rect(305, shipperInfoY - 10, 240, 70).stroke();
-      doc.text(order.receiverName || customer.name, 315, shipperInfoY);
-      doc.text(order.receiverAddressStreet || customer.addressStreet || "", 315, shipperInfoY + 15);
+      doc.rect(310, shipperBoxY, 235, 75).stroke();
+      doc.text(order.receiverName || customer.name, 320, shipperBoxY + 10);
+      doc.text(order.receiverAddressStreet || customer.addressStreet || "", 320, shipperBoxY + 25);
       const consigneeCityStateZip = [
         order.receiverAddressCity || customer.addressCity,
         order.receiverAddressState || customer.addressState,
         order.receiverAddressZipCode || customer.addressZipCode,
       ].filter(Boolean).join(", ");
-      doc.text(consigneeCityStateZip, 315, shipperInfoY + 30);
-      doc.text(order.receiverAddressCountry || customer.addressCountry || "", 315, shipperInfoY + 45);
+      doc.text(consigneeCityStateZip, 320, shipperBoxY + 40);
+      doc.text(order.receiverAddressCountry || customer.addressCountry || "", 320, shipperBoxY + 55);
 
-      doc.y = shipperInfoY + 70;
+      doc.y = shipperBoxY + 85;
       doc.moveDown();
 
-      // Carrier Info
       doc.fontSize(12).font("Helvetica-Bold").text("Carrier Information");
+      doc.moveDown(0.3);
       doc.fontSize(10).font("Helvetica");
       doc.text(`Carrier: ${carrier.name}`);
       doc.text(`Phone: ${carrier.phone?.join(", ") || "N/A"}`);
       doc.moveDown();
 
-      // Items Table
       doc.fontSize(12).font("Helvetica-Bold").text("Shipment Items");
       doc.moveDown(0.5);
 
-      // Table Header
       const tableTop = doc.y;
       const tableLeft = 50;
       doc.rect(tableLeft, tableTop, 495, 20).fill("#f0f0f0");
       doc.fillColor("#000000");
       doc.fontSize(10).font("Helvetica-Bold");
       doc.text("Product", tableLeft + 10, tableTop + 5);
-      doc.text("Quantity", tableLeft + 350, tableTop + 5);
+      doc.text("Quantity", tableLeft + 320, tableTop + 5);
       doc.text("Weight", tableLeft + 420, tableTop + 5);
 
-      // Table Rows
       let rowY = tableTop + 25;
       doc.font("Helvetica");
 
@@ -257,48 +277,39 @@ export async function generateBolPdf(
         const product = await storage.getProductById(item.productId);
         const itemWeight = (item.quantity || 0) * ((product?.weight || 0) + binWeight);
         doc.text(product?.name || item.productId, tableLeft + 10, rowY);
-        doc.text(String(item.quantity || 0), tableLeft + 350, rowY);
+        doc.text(String(item.quantity || 0), tableLeft + 320, rowY);
         doc.text(`${itemWeight.toFixed(2)} lbs`, tableLeft + 420, rowY);
         totalQuantity += item.quantity || 0;
         totalWeight += itemWeight;
         rowY += 20;
       }
 
-      // Total row
       doc.rect(tableLeft, rowY, 495, 20).fill("#e0e0e0");
       doc.fillColor("#000000");
       doc.font("Helvetica-Bold");
       doc.text("TOTAL", tableLeft + 10, rowY + 5);
-      doc.text(String(totalQuantity), tableLeft + 350, rowY + 5);
+      doc.text(String(totalQuantity), tableLeft + 320, rowY + 5);
       doc.text(`${totalWeight.toFixed(2)} lbs`, tableLeft + 420, rowY + 5);
 
       doc.y = rowY + 40;
-      doc.moveDown(2);
+      doc.moveDown();
 
-      // Signature Section
       doc.fontSize(10).font("Helvetica-Bold").text("Acknowledgment");
-      doc.moveDown(0.5);
+      doc.moveDown(0.3);
       doc.font("Helvetica").text(
         "Received the above listed goods in apparent good order, except as noted."
       );
-      doc.moveDown(2);
+      doc.moveDown(1.5);
 
       const signatureY = doc.y;
       doc.text("Shipper Signature: ____________________________", 50, signatureY);
-      doc.text("Date: ______________", 350, signatureY);
-      doc.moveDown();
-      doc.text("Consignee Signature: ____________________________", 50, signatureY + 30);
-      doc.text("Date: ______________", 350, signatureY + 30);
-      doc.moveDown();
-      doc.text("Driver Signature: ____________________________", 50, signatureY + 60);
-      doc.text("Date: ______________", 350, signatureY + 60);
+      doc.text("Date: ______________", 380, signatureY);
+      doc.text("Consignee Signature: ____________________________", 50, signatureY + 25);
+      doc.text("Date: ______________", 380, signatureY + 25);
+      doc.text("Driver Signature: ____________________________", 50, signatureY + 50);
+      doc.text("Date: ______________", 380, signatureY + 50);
 
-      // Footer
-      doc.y = 750;
-      doc.fontSize(8).text(
-        `Generated on ${new Date().toLocaleString()} | ${COMPANY_NAME}`,
-        { align: "center" }
-      );
+      addFooter(doc);
 
       doc.end();
     } catch (error) {
