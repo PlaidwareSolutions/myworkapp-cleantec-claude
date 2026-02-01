@@ -84,6 +84,7 @@ export default function UpdateContactPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/contact"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/contact/${id}`] });
       toast({ title: "Contact updated successfully" });
       setLocation("/setup/contacts");
     },
