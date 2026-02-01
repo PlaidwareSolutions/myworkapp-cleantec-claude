@@ -21,6 +21,7 @@ import UpdateProductPage from "@/pages/setup/products/UpdateProductPage";
 import ContactsPage from "@/pages/setup/contacts/ContactsPage";
 import AddContactPage from "@/pages/setup/contacts/AddContactPage";
 import UpdateContactPage from "@/pages/setup/contacts/UpdateContactPage";
+import AddSystemUserPage from "@/pages/setup/contacts/AddSystemUserPage";
 import TagsPage from "@/pages/setup/tags/TagsPage";
 import AddTagPage from "@/pages/setup/tags/AddTagPage";
 import DevicesPage from "@/pages/setup/devices/DevicesPage";
@@ -115,6 +116,11 @@ function AppRoutes() {
           <Route path="/setup/contacts/add">
             <ProtectedRoute permissions={["UserManagement", "admin"]}>
               <AddContactPage />
+            </ProtectedRoute>
+          </Route>
+          <Route path="/setup/contacts/update/:id/system-user/add">
+            <ProtectedRoute permissions={["UserManagement", "admin"]}>
+              <AddSystemUserPage />
             </ProtectedRoute>
           </Route>
           <Route path="/setup/contacts/update/:id">
