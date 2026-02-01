@@ -283,6 +283,8 @@ export default function ShipmentsPage() {
                                 <Badge variant="outline">{shipment.orderType}</Badge>
                               </div>
                               <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1 flex-wrap">
+                                {shipment.shipper?.name && <span>Shipper: {shipment.shipper.name}</span>}
+                                {shipment.receiver?.name && <span>Receiver: {shipment.receiver.name}</span>}
                                 <span>Carrier: {shipment.carrier?.name || "N/A"}</span>
                                 <span>Date: {new Date(shipment.shipmentDate || shipment.createdAt).toLocaleDateString()}</span>
                                 {shipment.driverName && <span>Driver: {shipment.driverName}</span>}

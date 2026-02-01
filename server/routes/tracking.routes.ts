@@ -307,11 +307,29 @@ router.get("/shipment", authenticateMiddleware, async (req, res, next) => {
     const shipmentsWithDetails = await Promise.all(result.data.map(async (shipment) => {
       const carrier = await storage.getContactById(shipment.carrierId);
       const shipmentWithBols = await storage.getShipmentWithBols(shipment.id);
+      
+      // Get shipper and receiver from first BOL's order
+      let shipper = null;
+      let receiver = null;
+      if (shipmentWithBols?.bolIds?.length) {
+        const firstBol = await storage.getBolWithItems(shipmentWithBols.bolIds[0]);
+        if (firstBol?.bol?.orderId) {
+          const order = await storage.getOrderWithDetails(firstBol.bol.orderId);
+          if (order) {
+            const shipperContact = await storage.getContactById(order.shipperId);
+            const receiverContact = await storage.getContactById(order.receiverId);
+            shipper = shipperContact ? { id: shipperContact.id, name: shipperContact.name } : null;
+            receiver = receiverContact ? { id: receiverContact.id, name: receiverContact.name } : null;
+          }
+        }
+      }
 
       return {
         ...shipment,
         shipmentStatus: shipment.receivedDate ? "RECEIVED" : "SHIPPED",
         carrier: carrier ? { id: carrier.id, name: carrier.name } : null,
+        shipper,
+        receiver,
         bols: shipmentWithBols?.bolIds || [],
       };
     }));

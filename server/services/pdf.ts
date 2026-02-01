@@ -421,16 +421,16 @@ export async function generateBolPdf(
       doc.text(`${totalWeight.toFixed(2)} lbs`, tableLeft + 420, rowY + 5);
 
       doc.y = rowY + 40;
-      doc.x = 50;
-      doc.moveDown();
 
-      doc.fontSize(10).font("Helvetica-Bold").text("Acknowledgment", 50);
+      doc.fontSize(10).font("Helvetica-Bold").text("Acknowledgment", 50, doc.y, { width: 495 });
       doc.moveDown(0.3);
       doc
         .font("Helvetica")
         .text(
           "Received the above listed goods in apparent good order, except as noted.",
           50,
+          doc.y,
+          { width: 495 }
         );
       doc.moveDown(1.5);
 
