@@ -98,10 +98,10 @@ export function AppSidebar() {
 
   return (
     <Sidebar className="border-r-0">
-      <SidebarHeader className="h-16 px-4 border-b border-sidebar-border flex items-center">
-        <div className="flex items-center gap-2">
-          <img src={myworkappIcon} alt="MyWorkApp" className="h-8 w-8 object-contain" />
-          <span className="text-sidebar-foreground font-semibold text-lg">MyWorkApp.io</span>
+      <SidebarHeader className="h-20 px-4 border-b border-sidebar-border flex items-center justify-center">
+        <div className="flex items-center justify-center gap-3 w-full">
+          <img src={myworkappIcon} alt="MyWorkApp" className="h-12 w-12 object-contain" />
+          <span className="text-sidebar-foreground font-bold text-xl">MyWorkApp.io</span>
         </div>
       </SidebarHeader>
       <SidebarContent className="pt-2 flex flex-col">
