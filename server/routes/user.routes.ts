@@ -74,7 +74,8 @@ router.post("/setup", async (req, res, next) => {
     
     const contact = await storage.createContact({
       name,
-      email: email.toLowerCase(),
+      email: [email.toLowerCase()],
+      phone: [],
       type: "ADMIN",
       systemUserActive: true,
       systemUserUsername: username.toLowerCase(),
