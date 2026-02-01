@@ -4,6 +4,9 @@ import { parse } from "csv-parse";
 import fs from "fs/promises";
 import { storage, getPagination } from "../storage";
 import { authenticateMiddleware, AuthenticatedRequest } from "../middleware/auth";
+import { db } from "../db";
+import { assets, assetEvents } from "@shared/schema";
+import { eq, and, desc } from "drizzle-orm";
 
 const router = Router();
 const upload = multer({ dest: "/tmp/uploads/" });
@@ -289,6 +292,80 @@ router.post("/tag/import", authenticateMiddleware, upload.single("file"), async 
     });
   } catch (error) {
     if (req.file) await fs.unlink(req.file.path).catch(() => {});
+    next(error);
+  }
+});
+
+router.get("/tag/search", authenticateMiddleware, async (req, res, next) => {
+  try {
+    const epc = req.query.epc as string;
+    if (!epc) {
+      return res.status(400).json({ success: false, message: "EPC code is required" });
+    }
+
+    // Search for tag by EPC (which is the tag id)
+    const tag = await storage.getTagById(epc);
+    
+    if (!tag) {
+      return res.status(404).json({ success: false, message: "Tag not found" });
+    }
+
+    // Get associated asset if exists
+    let asset = null;
+    const assetResult = await db
+      .select()
+      .from(assets)
+      .where(eq(assets.tagId, tag.id))
+      .limit(1);
+
+    if (assetResult.length > 0) {
+      const assetData = assetResult[0];
+      
+      // Get customer info from the last assignment event if available
+      let customer = null;
+      const lastAssignment = await db
+        .select({
+          outboundOrderId: assetEvents.outboundOrderId,
+        })
+        .from(assetEvents)
+        .where(
+          and(
+            eq(assetEvents.assetId, assetData.id),
+            eq(assetEvents.state, "ASSIGNED")
+          )
+        )
+        .orderBy(desc(assetEvents.createdAt))
+        .limit(1);
+
+      if (lastAssignment.length > 0 && lastAssignment[0].outboundOrderId) {
+        const order = await storage.getOrderById(lastAssignment[0].outboundOrderId);
+        if (order) {
+          customer = await storage.getContactById(order.customerId);
+        }
+      }
+
+      asset = {
+        id: assetData.id,
+        status: assetData.lastState,
+        productId: assetData.productId,
+        customer: customer ? { id: customer.id, name: customer.name } : null,
+      };
+    }
+
+    res.json({
+      success: true,
+      data: {
+        tag: {
+          id: tag.id,
+          epc: tag.id,
+          serial: tag.serial,
+          type: tag.type || "RFID",
+          active: tag.state !== "DECOMMISSIONED",
+        },
+        asset,
+      },
+    });
+  } catch (error) {
     next(error);
   }
 });
