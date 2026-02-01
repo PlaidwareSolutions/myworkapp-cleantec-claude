@@ -314,12 +314,25 @@ router.get("/shipment", authenticateMiddleware, async (req, res, next) => {
       if (shipmentWithBols?.bolIds?.length) {
         const firstBol = await storage.getBolWithItems(shipmentWithBols.bolIds[0]);
         if (firstBol?.bol?.orderId) {
-          const order = await storage.getOrderWithDetails(firstBol.bol.orderId);
-          if (order) {
-            const shipperContact = await storage.getContactById(order.shipperId);
-            const receiverContact = await storage.getContactById(order.receiverId);
-            shipper = shipperContact ? { id: shipperContact.id, name: shipperContact.name } : null;
-            receiver = receiverContact ? { id: receiverContact.id, name: receiverContact.name } : null;
+          const orderData = await storage.getOrderWithItems(firstBol.bol.orderId);
+          if (orderData?.order) {
+            // For OUTBOUND: shipper is the company, receiver is the customer
+            // For INBOUND: shipper is the customer/processor, receiver is the company
+            const order = orderData.order;
+            if (order.customerId) {
+              const customerContact = await storage.getContactById(order.customerId);
+              if (shipment.orderType === 'OUTBOUND') {
+                receiver = customerContact ? { id: customerContact.id, name: customerContact.name } : null;
+                // Shipper is the company (from settings or default)
+                const companySettings = await storage.getSettings();
+                shipper = { id: 'company', name: companySettings?.companyName || 'Cleantec Salinas' };
+              } else {
+                shipper = customerContact ? { id: customerContact.id, name: customerContact.name } : null;
+                // Receiver is the company
+                const companySettings = await storage.getSettings();
+                receiver = { id: 'company', name: companySettings?.companyName || 'Cleantec Salinas' };
+              }
+            }
           }
         }
       }
