@@ -31,8 +31,11 @@ export default function Dashboard() {
     enabled: hasPermission("Analytics"),
   });
 
+  const canViewOrders = hasPermission(["OrderViewSelf", "OrderViewAll", "OrderManagement"]);
+  
   const { data: ordersData, isLoading: ordersLoading } = useQuery<any>({
     queryKey: ["/api/order?limit=5"],
+    enabled: canViewOrders,
   });
 
   const stats = assetStats?.data || {};
@@ -200,47 +203,49 @@ export default function Dashboard() {
       )}
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ShoppingCart className="h-5 w-5" />
-              Recent Orders
-            </CardTitle>
-            <CardDescription>Latest orders in the system</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {ordersLoading ? (
-              <div className="space-y-3">
-                {[1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-12 w-full" />
-                ))}
-              </div>
-            ) : recentOrders.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                No orders found
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {recentOrders.slice(0, 5).map((order: any) => (
-                  <div
-                    key={order.id}
-                    className="flex items-center justify-between p-3 rounded-lg border"
-                  >
-                    <div>
-                      <p className="font-medium">{order.referenceId}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {order.customer?.name || "Unknown Customer"}
-                      </p>
+        {canViewOrders && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ShoppingCart className="h-5 w-5" />
+                Recent Orders
+              </CardTitle>
+              <CardDescription>Latest orders in the system</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {ordersLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <Skeleton key={i} className="h-12 w-full" />
+                  ))}
+                </div>
+              ) : recentOrders.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No orders found
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {recentOrders.slice(0, 5).map((order: any) => (
+                    <div
+                      key={order.id}
+                      className="flex items-center justify-between p-3 rounded-lg border"
+                    >
+                      <div>
+                        <p className="font-medium">{order.referenceId}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {order.customer?.name || "Unknown Customer"}
+                        </p>
+                      </div>
+                      <Badge className={statusColors[order.status] || ""}>
+                        {order.status}
+                      </Badge>
                     </div>
-                    <Badge className={statusColors[order.status] || ""}>
-                      {order.status}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {hasPermission("Analytics") && (
           <Card>
