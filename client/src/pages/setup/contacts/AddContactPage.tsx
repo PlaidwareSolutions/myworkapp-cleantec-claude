@@ -67,7 +67,12 @@ export default function AddContactPage() {
       return contactsApi.create(payload);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/contact"] });
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return typeof key === 'string' && key.startsWith('/api/contact');
+        }
+      });
       toast({ title: "Contact created successfully" });
       setLocation("/setup/contacts");
     },

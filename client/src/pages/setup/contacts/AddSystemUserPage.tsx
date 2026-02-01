@@ -52,8 +52,12 @@ export default function AddSystemUserPage() {
         password: data.password,
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/contact"] });
-      queryClient.invalidateQueries({ queryKey: [`/api/contact/${id}`] });
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return typeof key === 'string' && key.startsWith('/api/contact');
+        }
+      });
       toast({ title: "System user created successfully" });
       setLocation(`/setup/contacts/update/${id}`);
     },
