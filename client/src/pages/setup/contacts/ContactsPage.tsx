@@ -31,8 +31,7 @@ export default function ContactsPage() {
   const { hasPermission } = useAuth();
 
   const { data, isLoading } = useQuery<any>({
-    queryKey: ["/api/contact", { active: "all" }],
-    queryFn: () => fetch("/api/contact?active=all").then(res => res.json()),
+    queryKey: ["/api/contact?active=all"],
   });
 
   const allContacts = data?.data || [];
