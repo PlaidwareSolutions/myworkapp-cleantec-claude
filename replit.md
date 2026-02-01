@@ -40,7 +40,9 @@ Detailed documentation is available in the `/docs` folder:
 
 ## API Endpoints Summary
 
-### Authentication
+### Authentication & Setup
+- `GET /api/user/setup-status` - Check if initial setup is required (no admin users exist)
+- `POST /api/user/setup` - Create first admin user (only works when no admin users exist)
 - `POST /api/user/login` - User login
 - `GET /api/user/me` - Get current user
 
