@@ -65,16 +65,17 @@ const menuGroups: MenuGroup[] = [
       { title: "Tote Status", url: "/reports/tote-status", icon: Package, permissions: ["Analytics", "OrderManagement"] },
     ],
   },
-  {
-    label: "Setup",
-    items: [
-      { title: "Contacts", url: "/setup/contacts", icon: Users, permissions: ["UserManagement", "admin"] },
-      { title: "Products", url: "/setup/products", icon: Package, permissions: ["AssetManagement", "admin"] },
-      { title: "Activities", url: "/activities", icon: Activity, permissions: ["Analytics"] },
-      { title: "Settings", url: "/settings", icon: Settings, permissions: ["admin"] },
-    ],
-  },
 ];
+
+const setupGroup: MenuGroup = {
+  label: "Setup",
+  items: [
+    { title: "Contacts", url: "/setup/contacts", icon: Users, permissions: ["UserManagement", "admin"] },
+    { title: "Products", url: "/setup/products", icon: Package, permissions: ["AssetManagement", "admin"] },
+    { title: "Activities", url: "/activities", icon: Activity, permissions: ["Analytics"] },
+    { title: "Settings", url: "/settings", icon: Settings, permissions: ["admin"] },
+  ],
+};
 
 export function AppSidebar() {
   const [location] = useLocation();
@@ -90,6 +91,11 @@ export function AppSidebar() {
     }))
     .filter((group) => group.items.length > 0);
 
+  const filteredSetupItems = setupGroup.items.filter((item) => {
+    if (!item.permissions) return true;
+    return item.permissions.some((p) => hasPermission(p));
+  });
+
   return (
     <Sidebar className="border-r-0">
       <SidebarHeader className="h-16 px-4 border-b border-sidebar-border flex items-center">
@@ -98,15 +104,42 @@ export function AppSidebar() {
           <span className="text-sidebar-foreground font-semibold text-lg">MyWorkApp.io</span>
         </div>
       </SidebarHeader>
-      <SidebarContent className="pt-2">
-        {filteredGroups.map((group) => (
-          <SidebarGroup key={group.label}>
+      <SidebarContent className="pt-2 flex flex-col">
+        <div className="flex-1">
+          {filteredGroups.map((group) => (
+            <SidebarGroup key={group.label}>
+              <SidebarGroupLabel className="text-sidebar-foreground/70 text-xs uppercase tracking-wider">
+                {group.label}
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {group.items.map((item) => (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={location === item.url || (item.url !== "/" && location.startsWith(item.url))}
+                      >
+                        <Link href={item.url} data-testid={`nav-${item.title.toLowerCase()}`}>
+                          <item.icon className="h-4 w-4" />
+                          <span>{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          ))}
+        </div>
+        
+        {filteredSetupItems.length > 0 && (
+          <SidebarGroup>
             <SidebarGroupLabel className="text-sidebar-foreground/70 text-xs uppercase tracking-wider">
-              {group.label}
+              {setupGroup.label}
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {group.items.map((item) => (
+                {filteredSetupItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
                       asChild
@@ -122,7 +155,7 @@ export function AppSidebar() {
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-        ))}
+        )}
       </SidebarContent>
 
       <SidebarFooter className="p-4">
