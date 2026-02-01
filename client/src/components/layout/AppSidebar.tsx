@@ -62,6 +62,7 @@ const menuGroups: MenuGroup[] = [
     label: "Reports",
     items: [
       { title: "Cycle Time", url: "/reports/cycle-time", icon: BarChart3, permissions: ["Analytics", "OrderManagement"] },
+      { title: "Tote Status", url: "/reports/tote-status", icon: Package, permissions: ["Analytics", "OrderManagement"] },
     ],
   },
   {

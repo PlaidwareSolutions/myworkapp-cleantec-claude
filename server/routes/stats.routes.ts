@@ -679,4 +679,438 @@ router.get(
   }
 );
 
+// Tote Status Report - RTU / Dirty / In Use
+const TOTE_STATUS_CATEGORIES = {
+  rtu: ["CLEANED"],           // Ready To Use
+  dirty: ["RETURNED", "FIXED"], // Dirty - needs cleaning
+  inuse: ["ASSIGNED", "PROCESSING"], // In Use - out in field
+} as const;
+
+router.get(
+  "/tote-status",
+  authenticateMiddleware,
+  authorizeMiddleware(["Analytics"], ["OrderManagement"]),
+  async (req, res, next) => {
+    try {
+      const category = (req.query.category as string) || "rtu";
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const skip = (page - 1) * limit;
+      const search = req.query.search as string;
+      const customerId = req.query.customerId as string;
+      const carrierId = req.query.carrierId as string;
+      const inspectionDateFrom = req.query.inspectionDateFrom as string;
+      const inspectionDateTo = req.query.inspectionDateTo as string;
+
+      // Get the states for the selected category
+      const categoryStates = TOTE_STATUS_CATEGORIES[category as keyof typeof TOTE_STATUS_CATEGORIES] || TOTE_STATUS_CATEGORIES.rtu;
+
+      // Build conditions for assets based on their current state
+      const conditions: any[] = [
+        inArray(assets.lastState, [...categoryStates] as any),
+      ];
+
+      // Search by tag ID
+      if (search) {
+        conditions.push(
+          or(
+            ilike(tags.id, `%${search}%`),
+            ilike(tags.serial, `%${search}%`)
+          )
+        );
+      }
+
+      // Get assets with their tags and related info
+      const assetsQuery = db
+        .select({
+          assetId: assets.id,
+          tagId: tags.id,
+          tagSerial: tags.serial,
+          lastState: assets.lastState,
+          updatedAt: assets.updatedAt,
+          createdAt: assets.createdAt,
+        })
+        .from(assets)
+        .innerJoin(tags, eq(assets.tagId, tags.id))
+        .where(and(...conditions));
+
+      // For filtered queries (customer/carrier/date), we need to fetch all and filter in JS
+      // then paginate the results - this is because these filters require event lookups
+      const hasAdvancedFilters = customerId || carrierId || inspectionDateFrom || inspectionDateTo;
+      
+      // Get all assets for filtering (or paginated if no advanced filters)
+      const assetResults = hasAdvancedFilters 
+        ? await assetsQuery.orderBy(desc(assets.updatedAt))
+        : await assetsQuery.orderBy(desc(assets.updatedAt)).limit(limit).offset(skip);
+
+      const now = new Date();
+
+      // Enhance each asset with additional details
+      const assetsWithDetails = await Promise.all(
+        assetResults.map(async (asset) => {
+          // Get latest inspection event
+          const latestInspection = await db
+            .select({
+              createdAt: assetEvents.createdAt,
+              createdBy: assetEvents.createdBy,
+            })
+            .from(assetEvents)
+            .where(
+              and(
+                eq(assetEvents.assetId, asset.assetId),
+                eq(assetEvents.process, "INSPECTION")
+              )
+            )
+            .orderBy(desc(assetEvents.createdAt))
+            .limit(1);
+
+          let inspectionDate: Date | null = null;
+          let inspectedBy: string | null = null;
+
+          if (latestInspection.length > 0) {
+            inspectionDate = latestInspection[0].createdAt;
+            if (latestInspection[0].createdBy) {
+              const inspector = await storage.getContactById(latestInspection[0].createdBy);
+              inspectedBy = inspector?.name || null;
+            }
+          }
+
+          // Apply inspection date filters if provided
+          if (inspectionDateFrom && inspectionDate) {
+            const fromDate = new Date(inspectionDateFrom);
+            if (inspectionDate < fromDate) return null;
+          }
+          if (inspectionDateTo && inspectionDate) {
+            const toDate = new Date(inspectionDateTo);
+            toDate.setHours(23, 59, 59, 999);
+            if (inspectionDate > toDate) return null;
+          }
+
+          // Get usage count (number of completed cycles - RETURNED events)
+          const [usageCountResult] = await db
+            .select({ count: count() })
+            .from(assetEvents)
+            .where(
+              and(
+                eq(assetEvents.assetId, asset.assetId),
+                eq(assetEvents.state, "RETURNED"),
+                eq(assetEvents.process, "RECEIVING")
+              )
+            );
+          const usageCount = usageCountResult?.count || 0;
+
+          // Get last use date (most recent ASSIGNED event)
+          const lastAssignment = await db
+            .select({
+              createdAt: assetEvents.createdAt,
+              outboundOrderId: assetEvents.outboundOrderId,
+            })
+            .from(assetEvents)
+            .where(
+              and(
+                eq(assetEvents.assetId, asset.assetId),
+                eq(assetEvents.state, "ASSIGNED"),
+                eq(assetEvents.process, "SHIPPING")
+              )
+            )
+            .orderBy(desc(assetEvents.createdAt))
+            .limit(1);
+
+          let lastUseDate: Date | null = null;
+          let lastCustomerId: string | null = null;
+          let lastCustomerName: string | null = null;
+          let currentOrderId: string | null = null;
+          let currentOrderNumber: string | null = null;
+          let assignedDate: Date | null = null;
+
+          if (lastAssignment.length > 0) {
+            lastUseDate = lastAssignment[0].createdAt;
+            
+            if (lastAssignment[0].outboundOrderId) {
+              const order = await storage.getOrderById(lastAssignment[0].outboundOrderId);
+              if (order) {
+                const customer = await storage.getContactById(order.customerId);
+                lastCustomerId = order.customerId;
+                lastCustomerName = customer?.name || null;
+
+                // For "In Use" totes, this is the current order
+                if ((categoryStates as readonly string[]).includes("ASSIGNED") || (categoryStates as readonly string[]).includes("PROCESSING")) {
+                  currentOrderId = order.id;
+                  currentOrderNumber = order.referenceId;
+                  assignedDate = lastAssignment[0].createdAt;
+                }
+              }
+            }
+          }
+
+          // Apply customer filter if provided
+          if (customerId && lastCustomerId !== customerId) {
+            return null;
+          }
+
+          // Apply carrier filter if provided
+          if (carrierId) {
+            // Check if the last order had this carrier
+            if (lastAssignment.length > 0 && lastAssignment[0].outboundOrderId) {
+              const order = await storage.getOrderById(lastAssignment[0].outboundOrderId);
+              if (!order || order.carrierId !== carrierId) {
+                return null;
+              }
+            } else {
+              return null;
+            }
+          }
+
+          return {
+            assetId: asset.assetId,
+            tagId: asset.tagId,
+            tagSerial: asset.tagSerial,
+            state: asset.lastState,
+            inspectionDate,
+            inspectedBy,
+            usageCount,
+            lastUseDate,
+            lastCustomerId,
+            lastCustomerName,
+            currentOrderId,
+            currentOrderNumber,
+            assignedDate,
+          };
+        })
+      );
+
+      // Filter out nulls (filtered by date/customer/carrier)
+      const filteredAssets = assetsWithDetails.filter(Boolean);
+      
+      // For advanced filters, paginate the filtered results and compute accurate counts
+      let paginatedAssets = filteredAssets;
+      let filteredCount = filteredAssets.length;
+      
+      if (hasAdvancedFilters) {
+        // Paginate the filtered results
+        paginatedAssets = filteredAssets.slice(skip, skip + limit);
+      } else {
+        // Get total count from DB for non-advanced filter case
+        const [countResult] = await db
+          .select({ count: count() })
+          .from(assets)
+          .innerJoin(tags, eq(assets.tagId, tags.id))
+          .where(and(...conditions));
+        filteredCount = countResult?.count || 0;
+      }
+
+      // Get the unfiltered category total for context (how many total in this state)
+      const [categoryTotal] = await db
+        .select({ count: count() })
+        .from(assets)
+        .where(inArray(assets.lastState, [...categoryStates] as any));
+
+      res.json({
+        success: true,
+        data: paginatedAssets,
+        summary: {
+          totalCount: filteredCount, // Shows filtered count when filters applied
+          categoryTotal: categoryTotal?.count || 0, // Total in this category regardless of filters
+          category,
+          categoryLabel: category === "rtu" ? "Ready To Use" : category === "dirty" ? "Dirty" : "In Use",
+        },
+        pagination: {
+          page,
+          limit,
+          skip,
+        },
+        count: filteredCount,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Tote Status Export (CSV)
+router.get(
+  "/tote-status/export",
+  authenticateMiddleware,
+  authorizeMiddleware(["Analytics"], ["OrderManagement"]),
+  async (req, res, next) => {
+    try {
+      const category = (req.query.category as string) || "rtu";
+      const search = req.query.search as string;
+      const customerId = req.query.customerId as string;
+      const carrierId = req.query.carrierId as string;
+      const inspectionDateFrom = req.query.inspectionDateFrom as string;
+      const inspectionDateTo = req.query.inspectionDateTo as string;
+
+      const categoryStates = TOTE_STATUS_CATEGORIES[category as keyof typeof TOTE_STATUS_CATEGORIES] || TOTE_STATUS_CATEGORIES.rtu;
+
+      const conditions: any[] = [
+        inArray(assets.lastState, [...categoryStates] as any),
+      ];
+
+      if (search) {
+        conditions.push(
+          or(
+            ilike(tags.id, `%${search}%`),
+            ilike(tags.serial, `%${search}%`)
+          )
+        );
+      }
+
+      // Get all assets (no pagination for export)
+      const assetResults = await db
+        .select({
+          assetId: assets.id,
+          tagId: tags.id,
+          tagSerial: tags.serial,
+          lastState: assets.lastState,
+          updatedAt: assets.updatedAt,
+        })
+        .from(assets)
+        .innerJoin(tags, eq(assets.tagId, tags.id))
+        .where(and(...conditions))
+        .orderBy(desc(assets.updatedAt));
+
+      // Build CSV rows with full details
+      const csvRows = await Promise.all(
+        assetResults.map(async (asset) => {
+          // Get latest inspection
+          const latestInspection = await db
+            .select({
+              createdAt: assetEvents.createdAt,
+              createdBy: assetEvents.createdBy,
+            })
+            .from(assetEvents)
+            .where(
+              and(
+                eq(assetEvents.assetId, asset.assetId),
+                eq(assetEvents.process, "INSPECTION")
+              )
+            )
+            .orderBy(desc(assetEvents.createdAt))
+            .limit(1);
+
+          let inspectionDate: Date | null = null;
+          let inspectedBy: string | null = null;
+
+          if (latestInspection.length > 0) {
+            inspectionDate = latestInspection[0].createdAt;
+            if (latestInspection[0].createdBy) {
+              const inspector = await storage.getContactById(latestInspection[0].createdBy);
+              inspectedBy = inspector?.name || null;
+            }
+          }
+
+          // Apply inspection date filters
+          if (inspectionDateFrom && inspectionDate) {
+            const fromDate = new Date(inspectionDateFrom);
+            if (inspectionDate < fromDate) return null;
+          }
+          if (inspectionDateTo && inspectionDate) {
+            const toDate = new Date(inspectionDateTo);
+            toDate.setHours(23, 59, 59, 999);
+            if (inspectionDate > toDate) return null;
+          }
+
+          // Get usage count
+          const [usageCountResult] = await db
+            .select({ count: count() })
+            .from(assetEvents)
+            .where(
+              and(
+                eq(assetEvents.assetId, asset.assetId),
+                eq(assetEvents.state, "RETURNED"),
+                eq(assetEvents.process, "RECEIVING")
+              )
+            );
+          const usageCount = usageCountResult?.count || 0;
+
+          // Get last assignment
+          const lastAssignment = await db
+            .select({
+              createdAt: assetEvents.createdAt,
+              outboundOrderId: assetEvents.outboundOrderId,
+            })
+            .from(assetEvents)
+            .where(
+              and(
+                eq(assetEvents.assetId, asset.assetId),
+                eq(assetEvents.state, "ASSIGNED"),
+                eq(assetEvents.process, "SHIPPING")
+              )
+            )
+            .orderBy(desc(assetEvents.createdAt))
+            .limit(1);
+
+          let lastUseDate: Date | null = null;
+          let lastCustomerId: string | null = null;
+          let lastCustomerName: string | null = null;
+          let currentOrderNumber: string | null = null;
+          let assignedDate: Date | null = null;
+
+          if (lastAssignment.length > 0) {
+            lastUseDate = lastAssignment[0].createdAt;
+            
+            if (lastAssignment[0].outboundOrderId) {
+              const order = await storage.getOrderById(lastAssignment[0].outboundOrderId);
+              if (order) {
+                const customer = await storage.getContactById(order.customerId);
+                lastCustomerId = order.customerId;
+                lastCustomerName = customer?.name || null;
+
+                if ((categoryStates as readonly string[]).includes("ASSIGNED") || (categoryStates as readonly string[]).includes("PROCESSING")) {
+                  currentOrderNumber = order.referenceId;
+                  assignedDate = lastAssignment[0].createdAt;
+                }
+              }
+            }
+          }
+
+          // Apply filters
+          if (customerId && lastCustomerId !== customerId) return null;
+          if (carrierId) {
+            if (lastAssignment.length > 0 && lastAssignment[0].outboundOrderId) {
+              const order = await storage.getOrderById(lastAssignment[0].outboundOrderId);
+              if (!order || order.carrierId !== carrierId) return null;
+            } else {
+              return null;
+            }
+          }
+
+          return {
+            "Tote ID": asset.tagId || "",
+            "Serial Number": asset.tagSerial || "",
+            "State": asset.lastState || "",
+            "Inspection Date": inspectionDate ? new Date(inspectionDate).toISOString().split("T")[0] : "",
+            "Inspected By": inspectedBy || "",
+            "Usage Count": usageCount,
+            "Last Use Date": lastUseDate ? new Date(lastUseDate).toISOString().split("T")[0] : "",
+            "Last Customer": lastCustomerName || "",
+            "Current Order": currentOrderNumber || "",
+            "Assigned Date": assignedDate ? new Date(assignedDate).toISOString().split("T")[0] : "",
+          };
+        })
+      );
+
+      const filteredRows = csvRows.filter(Boolean);
+
+      if (filteredRows.length === 0) {
+        return res.status(200).send("No data to export");
+      }
+
+      const headers = Object.keys(filteredRows[0]!);
+      const csvContent = [
+        headers.join(","),
+        ...filteredRows.map(row => headers.map(h => `"${(row as any)[h]}"`).join(","))
+      ].join("\n");
+
+      const categoryLabel = category === "rtu" ? "ready-to-use" : category === "dirty" ? "dirty" : "in-use";
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader("Content-Disposition", `attachment; filename="tote-status-${categoryLabel}-${new Date().toISOString().split("T")[0]}.csv"`);
+      res.send(csvContent);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 export default router;

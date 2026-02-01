@@ -31,6 +31,7 @@ import ActivitiesPage from "@/pages/activities/ActivitiesPage";
 import SearchPage from "@/pages/search/SearchPage";
 import DocsPage from "@/pages/docs/DocsPage";
 import CycleTimeReport from "@/pages/reports/CycleTimeReport";
+import ToteStatusReport from "@/pages/reports/ToteStatusReport";
 
 function AuthRoutes() {
   return (
@@ -159,6 +160,11 @@ function AppRoutes() {
           <Route path="/reports/cycle-time">
             <ProtectedRoute permissions={["Analytics", "OrderManagement"]}>
               <CycleTimeReport />
+            </ProtectedRoute>
+          </Route>
+          <Route path="/reports/tote-status">
+            <ProtectedRoute permissions={["Analytics", "OrderManagement"]}>
+              <ToteStatusReport />
             </ProtectedRoute>
           </Route>
           
