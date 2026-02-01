@@ -1,7 +1,21 @@
 # CleanTech Asset Tracking API
 
 ## Overview
-A comprehensive PostgreSQL-based API for asset tracking, order management, and logistics operations. Converted from MongoDB to PostgreSQL using Drizzle ORM.
+A comprehensive PostgreSQL-based application for tracking reusable bins, totes, and containers used in the farming industry. Built for a cleaning/sanitization company that manages container lifecycle from warehouse to farmers (OUTBOUND) and back from processors (INBOUND).
+
+## Documentation
+Detailed documentation is available in the `/docs` folder:
+- [README](./docs/README.md) - Application overview and purpose
+- [Data Model](./docs/DATA-MODEL.md) - Database entities and relationships
+- [Order Lifecycle](./docs/ORDER-LIFECYCLE.md) - Order statuses, transitions, and editing rules
+- [Asset Lifecycle](./docs/ASSET-LIFECYCLE.md) - Asset states, processes, and event tracking
+- [Roles & Permissions](./docs/ROLES-PERMISSIONS.md) - User roles and access control
+- [Processes](./docs/PROCESSES.md) - Shipping (OUTBOUND) and receiving (INBOUND) workflows
+
+## Technical Stack
+- **Backend**: Express + TypeScript with PostgreSQL (Drizzle ORM)
+- **Frontend**: React + TypeScript with Shadcn UI components
+- **Authentication**: JWT with role-based permissions
 
 ## Current State
 **Fully functional API with 50+ endpoints**
