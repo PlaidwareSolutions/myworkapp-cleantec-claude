@@ -1,10 +1,13 @@
 import { Router } from "express";
 import bcrypt from "bcrypt";
+import multer from "multer";
 import { storage } from "../storage";
 import { authenticateMiddleware, generateToken, AuthenticatedRequest } from "../middleware/auth";
 import { ROLE_PERMISSIONS, SYSTEM_RESERVED_ID } from "@shared/schema";
+import { importFromZip } from "../services/import";
 
 const router = Router();
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
 
 // Check if setup is needed (no admin users exist)
 router.get("/setup-status", async (req, res, next) => {
@@ -99,6 +102,43 @@ router.post("/setup", async (req, res, next) => {
         },
       },
     });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Import legacy data from zip file (only works when no data exists)
+router.post("/setup/import", upload.single("file"), async (req, res, next) => {
+  try {
+    const hasAdminUsers = await storage.hasAdminSystemUsers();
+    if (hasAdminUsers) {
+      return res.status(403).json({ 
+        success: false, 
+        message: "Import not allowed. System already has data." 
+      });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "No file uploaded" 
+      });
+    }
+
+    const result = await importFromZip(req.file.buffer);
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        message: result.message,
+        data: { stats: result.stats },
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: result.message,
+      });
+    }
   } catch (error) {
     next(error);
   }
