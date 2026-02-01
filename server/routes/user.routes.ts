@@ -6,6 +6,103 @@ import { ROLE_PERMISSIONS, SYSTEM_RESERVED_ID } from "@shared/schema";
 
 const router = Router();
 
+// Check if setup is needed (no admin users exist)
+router.get("/setup-status", async (req, res, next) => {
+  try {
+    const hasAdminUsers = await storage.hasAdminSystemUsers();
+    res.json({ success: true, data: { setupRequired: !hasAdminUsers } });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Initial setup - create first admin user (only works when no admin users exist)
+router.post("/setup", async (req, res, next) => {
+  try {
+    const { name, email, username, password } = req.body;
+
+    // Check if admin users already exist
+    const hasAdminUsers = await storage.hasAdminSystemUsers();
+    if (hasAdminUsers) {
+      return res.status(403).json({ 
+        success: false, 
+        message: "Setup already completed. Admin users exist." 
+      });
+    }
+
+    // Validate required fields
+    if (!name || !email || !username || !password) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Name, email, username, and password are required" 
+      });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Password must be at least 6 characters" 
+      });
+    }
+
+    // Check if ADMIN role exists, create if not
+    let adminRole = await storage.getRoleById("ADMIN");
+    if (!adminRole) {
+      adminRole = await storage.createRole({
+        id: "ADMIN",
+        permissions: {
+          admin: true,
+          UserManagement: true,
+          OrderManagement: true,
+          OrderCreateAll: true,
+          OrderViewAll: true,
+          AssetManagement: true,
+          Analytics: true,
+        },
+        createdBy: SYSTEM_RESERVED_ID,
+      });
+    }
+
+    // Check if username already exists
+    const existingUser = await storage.getContactByUsername(username.toLowerCase());
+    if (existingUser) {
+      return res.status(409).json({ success: false, message: "Username already exists" });
+    }
+
+    // Create the admin contact with system user
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    const contact = await storage.createContact({
+      name,
+      email: email.toLowerCase(),
+      type: "ADMIN",
+      systemUserActive: true,
+      systemUserUsername: username.toLowerCase(),
+      systemUserPasswordHash: hashedPassword,
+      systemUserPasswordLastChanged: new Date(),
+      systemUserCreatedBy: SYSTEM_RESERVED_ID,
+    });
+
+    // Generate token for immediate login
+    const token = generateToken({ id: contact.id, username: contact.systemUserUsername || "" });
+
+    res.status(201).json({
+      success: true,
+      message: "Setup completed successfully",
+      data: {
+        token,
+        contact: {
+          ...contact,
+          systemUserPasswordHash: undefined,
+          type: adminRole,
+        },
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Login
 router.post("/login", async (req, res, next) => {
   try {

@@ -53,6 +53,7 @@ export interface IStorage {
   getContactByUsername(username: string): Promise<Contact | undefined>;
   updateContact(id: string, data: Partial<InsertContact>): Promise<Contact | undefined>;
   getContactOrdersCount(contactId: string): Promise<number>;
+  hasAdminSystemUsers(): Promise<boolean>;
   
   // Products
   createProduct(product: InsertProduct): Promise<Product>;
@@ -206,6 +207,28 @@ export class DatabaseStorage implements IStorage {
   async getContactOrdersCount(contactId: string): Promise<number> {
     const [result] = await db.select({ count: count() }).from(orders).where(eq(orders.customerId, contactId));
     return result?.count || 0;
+  }
+
+  async hasAdminSystemUsers(): Promise<boolean> {
+    // Check if any contacts with admin role have active system user accounts
+    const adminRoles = await db.select().from(roles).where(
+      sql`${roles.permissions}->>'admin' = 'true'`
+    );
+    
+    if (adminRoles.length === 0) {
+      return false;
+    }
+
+    const adminRoleIds = adminRoles.map(r => r.id);
+    
+    const [result] = await db.select({ count: count() }).from(contacts).where(
+      and(
+        inArray(contacts.type, adminRoleIds),
+        eq(contacts.systemUserActive, true)
+      )
+    );
+    
+    return (result?.count || 0) > 0;
   }
 
   // Products

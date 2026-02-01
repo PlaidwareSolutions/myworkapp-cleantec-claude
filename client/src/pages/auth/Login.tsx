@@ -22,14 +22,33 @@ type LoginForm = z.infer<typeof loginSchema>;
 
 export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
+  const [isChecking, setIsChecking] = useState(true);
   const { login, isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
-  // Redirect when authenticated
+  // Check if setup is needed and redirect when authenticated
   useEffect(() => {
+    const checkSetupStatus = async () => {
+      try {
+        const response = await fetch("/api/user/setup-status");
+        const data = await response.json();
+        
+        if (data.data?.setupRequired) {
+          setLocation("/auth/setup");
+          return;
+        }
+      } catch (error) {
+        console.error("Failed to check setup status:", error);
+      } finally {
+        setIsChecking(false);
+      }
+    };
+    
     if (isAuthenticated) {
       setLocation("/");
+    } else {
+      checkSetupStatus();
     }
   }, [isAuthenticated, setLocation]);
 
@@ -60,6 +79,14 @@ export default function Login() {
       setIsLoading(false);
     }
   };
+
+  if (isChecking) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-green-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-gradient-to-br from-green-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 p-4">

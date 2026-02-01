@@ -8,6 +8,7 @@ import { BaseLayout } from "@/components/layout/BaseLayout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import NotFound from "@/pages/not-found";
 import Login from "@/pages/auth/Login";
+import Setup from "@/pages/auth/Setup";
 import Dashboard from "@/pages/dashboard/Dashboard";
 import OrdersPage from "@/pages/processes/orders/OrdersPage";
 import AddOrderPage from "@/pages/processes/orders/AddOrderPage";
@@ -36,6 +37,7 @@ import ToteStatusReport from "@/pages/reports/ToteStatusReport";
 function AuthRoutes() {
   return (
     <Switch>
+      <Route path="/auth/setup" component={Setup} />
       <Route path="/auth/login" component={Login} />
       <Route path="/auth" component={Login} />
     </Switch>
