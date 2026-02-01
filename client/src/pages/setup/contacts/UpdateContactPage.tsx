@@ -39,7 +39,7 @@ export default function UpdateContactPage() {
   const { isAdmin } = useAuth();
 
   const { data, isLoading } = useQuery<any>({
-    queryKey: ["/api/contact", id],
+    queryKey: [`/api/contact/${id}`],
     enabled: !!id,
   });
 
