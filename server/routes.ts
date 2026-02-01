@@ -10,6 +10,7 @@ import trackingRoutes from "./routes/tracking.routes";
 import statsRoutes from "./routes/stats.routes";
 import settingsRoutes from "./routes/settings.routes";
 import hierarchyRoutes from "./routes/hierarchy.routes";
+import docsRoutes from "./routes/docs.routes";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -27,6 +28,7 @@ export async function registerRoutes(
   app.use("/api/stats", statsRoutes);
   app.use("/api/settings", settingsRoutes);
   app.use("/api/hierarchy", hierarchyRoutes);
+  app.use("/api/docs", docsRoutes);
 
   // Health check endpoint
   app.get("/api/health", (req, res) => {

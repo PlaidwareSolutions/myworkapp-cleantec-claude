@@ -27,6 +27,7 @@ import DevicesPage from "@/pages/setup/devices/DevicesPage";
 import SettingsPage from "@/pages/settings/SettingsPage";
 import ActivitiesPage from "@/pages/activities/ActivitiesPage";
 import SearchPage from "@/pages/search/SearchPage";
+import DocsPage from "@/pages/docs/DocsPage";
 
 function AuthRoutes() {
   return (
@@ -144,6 +145,8 @@ function AppRoutes() {
               <SettingsPage />
             </ProtectedRoute>
           </Route>
+          
+          <Route path="/docs" component={DocsPage} />
           
           <Route component={NotFound} />
         </Switch>
