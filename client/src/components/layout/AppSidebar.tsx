@@ -26,6 +26,7 @@ import {
   Search,
   LogOut,
   Cpu,
+  BarChart3,
 } from "lucide-react";
 import myworkappIcon from "@/assets/images/myworkapp-icon.png";
 
@@ -55,6 +56,12 @@ const menuGroups: MenuGroup[] = [
       { title: "Shipments", url: "/processes/shipments", icon: Truck, permissions: ["OrderViewAll", "OrderViewSelf"] },
       { title: "Inventory", url: "/processes/inventory", icon: Warehouse, permissions: ["Analytics"] },
       { title: "Search", url: "/search", icon: Search },
+    ],
+  },
+  {
+    label: "Reports",
+    items: [
+      { title: "Cycle Time", url: "/reports/cycle-time", icon: BarChart3, permissions: ["Analytics", "OrderManagement"] },
     ],
   },
   {

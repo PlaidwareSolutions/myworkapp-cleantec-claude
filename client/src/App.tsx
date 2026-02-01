@@ -30,6 +30,7 @@ import ChangePasswordPage from "@/pages/settings/ChangePasswordPage";
 import ActivitiesPage from "@/pages/activities/ActivitiesPage";
 import SearchPage from "@/pages/search/SearchPage";
 import DocsPage from "@/pages/docs/DocsPage";
+import CycleTimeReport from "@/pages/reports/CycleTimeReport";
 
 function AuthRoutes() {
   return (
@@ -152,6 +153,12 @@ function AppRoutes() {
           <Route path="/settings">
             <ProtectedRoute permissions={["admin"]}>
               <SettingsPage />
+            </ProtectedRoute>
+          </Route>
+          
+          <Route path="/reports/cycle-time">
+            <ProtectedRoute permissions={["Analytics", "OrderManagement"]}>
+              <CycleTimeReport />
             </ProtectedRoute>
           </Route>
           
