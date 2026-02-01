@@ -43,6 +43,7 @@ Detailed documentation is available in the `/docs` folder:
 ### Authentication & Setup
 - `GET /api/user/setup-status` - Check if initial setup is required (no admin users exist)
 - `POST /api/user/setup` - Create first admin user (only works when no admin users exist)
+- `POST /api/user/setup/import` - Import legacy data from zip file (only works when no admin users exist)
 - `POST /api/user/login` - User login
 - `GET /api/user/me` - Get current user
 
