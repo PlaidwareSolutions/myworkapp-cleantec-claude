@@ -182,7 +182,7 @@ export default function UpdateContactPage() {
               <div>
                 <FormLabel>Type</FormLabel>
                 <div className="mt-2">
-                  <Badge variant="outline">{contact?.type}</Badge>
+                  <Badge variant="outline">{typeof contact?.type === 'object' ? contact?.type?.id : contact?.type}</Badge>
                 </div>
               </div>
 
