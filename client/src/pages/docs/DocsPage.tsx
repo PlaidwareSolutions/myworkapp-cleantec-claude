@@ -114,18 +114,18 @@ export default function DocsPage() {
                       </td>
                     ),
                     pre: ({ children }) => (
-                      <pre className="bg-muted p-4 rounded-md overflow-x-auto text-sm">
+                      <pre className="bg-zinc-900 text-zinc-100 p-4 rounded-md overflow-x-auto text-sm">
                         {children}
                       </pre>
                     ),
                     code: ({ children, className }) => {
                       const isInline = !className;
                       return isInline ? (
-                        <code className="bg-muted px-1.5 py-0.5 rounded text-sm">
+                        <code className="bg-zinc-200 dark:bg-zinc-700 text-zinc-800 dark:text-zinc-200 px-1.5 py-0.5 rounded text-sm">
                           {children}
                         </code>
                       ) : (
-                        <code>{children}</code>
+                        <code className="text-zinc-100">{children}</code>
                       );
                     },
                     h1: ({ children }) => (
