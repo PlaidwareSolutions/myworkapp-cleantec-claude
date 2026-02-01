@@ -246,4 +246,131 @@ router.put("/update-system-user/:contactId", authenticateMiddleware, async (req:
   }
 });
 
+// Delete system user (admin only)
+router.delete("/delete-system-user/:contactId", authenticateMiddleware, async (req: AuthenticatedRequest, res, next) => {
+  try {
+    const { contactId } = req.params;
+    const permissions = req.user!.permissions;
+
+    if (!permissions.admin && !permissions.UserManagement) {
+      return res.status(403).json({ success: false, message: "Admin access required" });
+    }
+
+    if (contactId === SYSTEM_RESERVED_ID) {
+      return res.status(400).json({ success: false, message: "Not allowed" });
+    }
+
+    if (contactId === req.user!.id) {
+      return res.status(400).json({ success: false, message: "Cannot delete your own user account" });
+    }
+
+    const contact = await storage.getContactById(contactId);
+    if (!contact) {
+      return res.status(400).json({ success: false, message: "Invalid contact ID" });
+    }
+
+    if (!contact.systemUserUsername) {
+      return res.status(400).json({ success: false, message: "Contact is not a system user" });
+    }
+
+    await storage.updateContact(contactId, {
+      systemUserActive: false,
+      systemUserUsername: null,
+      systemUserPasswordHash: null,
+      systemUserPasswordLastChanged: null,
+      systemUserCreatedBy: null,
+      systemUserUpdatedBy: req.user!.id,
+      systemUserLastLogin: null,
+    });
+
+    res.json({ success: true, message: "System user deleted successfully" });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Reset password for a user (admin only)
+router.post("/reset-password/:contactId", authenticateMiddleware, async (req: AuthenticatedRequest, res, next) => {
+  try {
+    const { contactId } = req.params;
+    const { newPassword } = req.body;
+    const permissions = req.user!.permissions;
+
+    if (!permissions.admin && !permissions.UserManagement) {
+      return res.status(403).json({ success: false, message: "Admin access required" });
+    }
+
+    if (contactId === SYSTEM_RESERVED_ID) {
+      return res.status(400).json({ success: false, message: "Not allowed" });
+    }
+
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ success: false, message: "Password must be at least 6 characters" });
+    }
+
+    const contact = await storage.getContactById(contactId);
+    if (!contact) {
+      return res.status(400).json({ success: false, message: "Invalid contact ID" });
+    }
+
+    if (!contact.systemUserUsername) {
+      return res.status(400).json({ success: false, message: "Contact is not a system user" });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await storage.updateContact(contactId, {
+      systemUserPasswordHash: hashedPassword,
+      systemUserPasswordLastChanged: new Date(),
+      systemUserUpdatedBy: req.user!.id,
+    });
+
+    res.json({ success: true, message: "Password reset successfully" });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Change own password (authenticated user)
+router.post("/change-password", authenticateMiddleware, async (req: AuthenticatedRequest, res, next) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.user!.id;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ success: false, message: "Current password and new password are required" });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ success: false, message: "New password must be at least 6 characters" });
+    }
+
+    const contact = await storage.getContactById(userId);
+    if (!contact || !contact.systemUserPasswordHash) {
+      return res.status(400).json({ success: false, message: "User not found" });
+    }
+
+    if (!contact.systemUserActive) {
+      return res.status(403).json({ success: false, message: "User account is inactive" });
+    }
+
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, contact.systemUserPasswordHash);
+    if (!isCurrentPasswordValid) {
+      return res.status(401).json({ success: false, message: "Current password is incorrect" });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await storage.updateContact(userId, {
+      systemUserPasswordHash: hashedPassword,
+      systemUserPasswordLastChanged: new Date(),
+      systemUserUpdatedBy: userId,
+    });
+
+    res.json({ success: true, message: "Password changed successfully" });
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;

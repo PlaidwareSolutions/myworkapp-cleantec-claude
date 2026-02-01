@@ -45,7 +45,8 @@ export default function ContactsPage() {
         contact.phone?.[0]?.includes(search) ||
         contact.systemUserUsername?.toLowerCase().includes(searchLower);
 
-      const matchesType = typeFilter === "ALL" || contact.type === typeFilter;
+      const contactType = typeof contact.type === 'object' ? contact.type?.id : contact.type;
+      const matchesType = typeFilter === "ALL" || contactType === typeFilter;
       
       const matchesStatus = statusFilter === "ALL" || 
         (statusFilter === "ACTIVE" && contact.active) ||
@@ -62,7 +63,8 @@ export default function ContactsPage() {
   const typeCounts = useMemo(() => {
     const counts: Record<TypeFilter, number> = { ALL: allContacts.length, CUSTOMER: 0, CARRIER: 0, PROCESSOR: 0, ADMIN: 0, OWNER: 0, EMPLOYEE: 0 };
     allContacts.forEach((c: any) => {
-      if (counts[c.type as TypeFilter] !== undefined) counts[c.type as TypeFilter]++;
+      const contactType = typeof c.type === 'object' ? c.type?.id : c.type;
+      if (counts[contactType as TypeFilter] !== undefined) counts[contactType as TypeFilter]++;
     });
     return counts;
   }, [allContacts]);
@@ -223,7 +225,7 @@ export default function ContactsPage() {
                   <TableRow key={contact.id} data-testid={`row-contact-${contact.id}`}>
                     <TableCell className="font-medium">{contact.name}</TableCell>
                     <TableCell>
-                      <Badge variant="outline">{contact.type}</Badge>
+                      <Badge variant="outline">{typeof contact.type === 'object' ? contact.type?.id : contact.type}</Badge>
                     </TableCell>
                     <TableCell>{contact.email?.[0] || "-"}</TableCell>
                     <TableCell>{contact.phone?.[0] || "-"}</TableCell>

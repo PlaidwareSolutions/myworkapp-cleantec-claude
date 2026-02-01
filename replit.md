@@ -48,6 +48,9 @@ Detailed documentation is available in the `/docs` folder:
 - `GET/POST /api/user/role` - Role management
 - `POST /api/user/create-system-user/:contactId` - Create system user
 - `PUT /api/user/update-system-user/:contactId` - Update system user
+- `DELETE /api/user/delete-system-user/:contactId` - Delete system user (admin only)
+- `POST /api/user/reset-password/:contactId` - Reset user password (admin only)
+- `POST /api/user/change-password` - Change own password (authenticated)
 
 ### Contacts
 - `GET/POST /api/contact` - Contact management

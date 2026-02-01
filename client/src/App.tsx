@@ -26,6 +26,7 @@ import TagsPage from "@/pages/setup/tags/TagsPage";
 import AddTagPage from "@/pages/setup/tags/AddTagPage";
 import DevicesPage from "@/pages/setup/devices/DevicesPage";
 import SettingsPage from "@/pages/settings/SettingsPage";
+import ChangePasswordPage from "@/pages/settings/ChangePasswordPage";
 import ActivitiesPage from "@/pages/activities/ActivitiesPage";
 import SearchPage from "@/pages/search/SearchPage";
 import DocsPage from "@/pages/docs/DocsPage";
@@ -145,6 +146,8 @@ function AppRoutes() {
               <DevicesPage />
             </ProtectedRoute>
           </Route>
+          
+          <Route path="/settings/change-password" component={ChangePasswordPage} />
           
           <Route path="/settings">
             <ProtectedRoute permissions={["admin"]}>

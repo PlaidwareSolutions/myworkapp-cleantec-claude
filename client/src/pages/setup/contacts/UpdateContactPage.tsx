@@ -1,11 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useLocation, Link } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { contactsApi } from "@/lib/api";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,25 @@ import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ArrowLeft, UserCog, Plus } from "lucide-react";
+import { Loader2, ArrowLeft, UserCog, Plus, Trash2, KeyRound } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const contactSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -36,14 +54,48 @@ export default function UpdateContactPage() {
   const { id } = useParams<{ id: string }>();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const { isAdmin } = useAuth();
+  const { isAdmin, hasPermission, user } = useAuth();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showResetPasswordDialog, setShowResetPasswordDialog] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
 
-  const { data, isLoading } = useQuery<any>({
+  const { data, isLoading, refetch } = useQuery<any>({
     queryKey: [`/api/contact/${id}`],
     enabled: !!id,
   });
 
   const contact = data?.data;
+  const isOwnAccount = user?.id === id;
+
+  const deleteUserMutation = useMutation({
+    mutationFn: () => apiRequest("DELETE", `/api/user/delete-system-user/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return typeof key === 'string' && key.startsWith('/api/contact');
+        }
+      });
+      toast({ title: "System user deleted successfully" });
+      setShowDeleteDialog(false);
+      refetch();
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to delete user", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: (password: string) => apiRequest("POST", `/api/user/reset-password/${id}`, { newPassword: password }),
+    onSuccess: () => {
+      toast({ title: "Password reset successfully" });
+      setShowResetPasswordDialog(false);
+      setNewPassword("");
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to reset password", description: error.message, variant: "destructive" });
+    },
+  });
 
   const form = useForm<ContactForm>({
     resolver: zodResolver(contactSchema),
@@ -124,7 +176,7 @@ export default function UpdateContactPage() {
         </div>
       </div>
 
-      {isAdmin() && (
+      {hasPermission(["UserManagement", "admin"]) && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -137,16 +189,45 @@ export default function UpdateContactPage() {
           </CardHeader>
           <CardContent>
             {contact?.systemUserActive ? (
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Username: {contact.systemUserUsername}</p>
-                  <p className="text-sm text-muted-foreground">
-                    Last login: {contact.systemUserLastLogin 
-                      ? new Date(contact.systemUserLastLogin).toLocaleString() 
-                      : "Never"}
-                  </p>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Username: {contact.systemUserUsername}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Last login: {contact.systemUserLastLogin 
+                        ? new Date(contact.systemUserLastLogin).toLocaleString() 
+                        : "Never"}
+                    </p>
+                    {contact.systemUserPasswordLastChanged && (
+                      <p className="text-sm text-muted-foreground">
+                        Password last changed: {new Date(contact.systemUserPasswordLastChanged).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                  <Badge variant="default">Active</Badge>
                 </div>
-                <Badge variant="default">Active</Badge>
+                <div className="flex gap-2 pt-2 border-t">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setShowResetPasswordDialog(true)}
+                    data-testid="button-reset-password"
+                  >
+                    <KeyRound className="mr-2 h-4 w-4" />
+                    Reset Password
+                  </Button>
+                  {!isOwnAccount && (
+                    <Button 
+                      variant="destructive" 
+                      size="sm"
+                      onClick={() => setShowDeleteDialog(true)}
+                      data-testid="button-delete-user"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete User
+                    </Button>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="text-center py-4">
@@ -348,6 +429,61 @@ export default function UpdateContactPage() {
           </div>
         </form>
       </Form>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete System User</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this system user? This will remove their login credentials and they will no longer be able to access the system. The contact record will remain.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteUserMutation.mutate()}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteUserMutation.isPending}
+            >
+              {deleteUserMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Delete User
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={showResetPasswordDialog} onOpenChange={setShowResetPasswordDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+            <DialogDescription>
+              Enter a new password for {contact?.systemUserUsername}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              type="password"
+              placeholder="New password (min 6 characters)"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              data-testid="input-new-password"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowResetPasswordDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => resetPasswordMutation.mutate(newPassword)}
+              disabled={newPassword.length < 6 || resetPasswordMutation.isPending}
+              data-testid="button-confirm-reset-password"
+            >
+              {resetPasswordMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Reset Password
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
