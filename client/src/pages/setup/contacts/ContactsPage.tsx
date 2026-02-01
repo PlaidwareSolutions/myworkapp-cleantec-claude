@@ -69,6 +69,24 @@ export default function ContactsPage() {
     return counts;
   }, [allContacts]);
 
+  const statusCounts = useMemo(() => {
+    const counts: Record<StatusFilter, number> = { ALL: allContacts.length, ACTIVE: 0, INACTIVE: 0 };
+    allContacts.forEach((c: any) => {
+      if (c.active) counts.ACTIVE++;
+      else counts.INACTIVE++;
+    });
+    return counts;
+  }, [allContacts]);
+
+  const systemUserCounts = useMemo(() => {
+    const counts: Record<SystemUserFilter, number> = { ALL: allContacts.length, HAS_USER: 0, NO_USER: 0 };
+    allContacts.forEach((c: any) => {
+      if (c.systemUserActive) counts.HAS_USER++;
+      else counts.NO_USER++;
+    });
+    return counts;
+  }, [allContacts]);
+
   const clearFilters = () => {
     setSearch("");
     setTypeFilter("ALL");
@@ -158,6 +176,11 @@ export default function ContactsPage() {
                       data-testid={`filter-status-${status.toLowerCase()}`}
                     >
                       {status === "ALL" ? "All" : status.charAt(0) + status.slice(1).toLowerCase()}
+                      {statusCounts[status] > 0 && (
+                        <Badge variant="secondary" className="ml-1 text-xs">
+                          {statusCounts[status]}
+                        </Badge>
+                      )}
                     </Button>
                   ))}
                 </div>
@@ -175,6 +198,11 @@ export default function ContactsPage() {
                       data-testid={`filter-sysuser-${filter.toLowerCase()}`}
                     >
                       {filter === "ALL" ? "All" : filter === "HAS_USER" ? "Has Login" : "No Login"}
+                      {systemUserCounts[filter] > 0 && (
+                        <Badge variant="secondary" className="ml-1 text-xs">
+                          {systemUserCounts[filter]}
+                        </Badge>
+                      )}
                     </Button>
                   ))}
                 </div>
