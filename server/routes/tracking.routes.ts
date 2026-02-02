@@ -354,6 +354,57 @@ router.get("/shipment", authenticateMiddleware, async (req, res, next) => {
   }
 });
 
+// Receive shipment - must be before /shipment/:id to avoid route matching issues
+router.post("/shipment/receive/:id", authenticateMiddleware, async (req: AuthenticatedRequest, res, next) => {
+  try {
+    const shipment = await storage.getShipmentById(req.params.id);
+    if (!shipment) {
+      return res.status(404).json({ success: false, message: "Shipment not found" });
+    }
+
+    if (shipment.receivedDate) {
+      return res.status(400).json({ success: false, message: "Shipment already received" });
+    }
+
+    const receivedDate = req.body?.receivedDate ? new Date(req.body.receivedDate) : new Date();
+    
+    const updatedShipment = await storage.updateShipment(req.params.id, {
+      receivedDate,
+      updatedBy: req.user!.id,
+    });
+
+    // Get all BOLs in the shipment and update their orders
+    const shipmentWithBols = await storage.getShipmentWithBols(req.params.id);
+    if (shipmentWithBols) {
+      const orderIds = new Set<string>();
+      
+      for (const bolId of shipmentWithBols.bolIds) {
+        const bol = await storage.getBolById(bolId);
+        if (bol) {
+          orderIds.add(bol.orderId);
+        }
+      }
+
+      // Update order statuses to RECEIVED (handle both SHIPPED and SHIPPED-PARTIAL)
+      for (const orderId of orderIds) {
+        const order = await storage.getOrderById(orderId);
+        if (order && (order.status === "SHIPPED" || order.status === "SHIPPED-PARTIAL")) {
+          await storage.updateOrder(orderId, { status: "RECEIVED" });
+          await storage.createOrderEvent({
+            orderId,
+            status: "RECEIVED",
+            createdBy: req.user!.id,
+          });
+        }
+      }
+    }
+
+    res.json({ success: true, data: updatedShipment });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Get shipment by ID
 router.get("/shipment/:id", authenticateMiddleware, async (req, res, next) => {
   try {
@@ -447,57 +498,6 @@ router.get("/shipment/:id/pdf", authenticateMiddleware, async (req: Authenticate
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="${filename}.pdf"`);
     res.send(pdfBuffer);
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Receive shipment
-router.post("/shipment/receive/:id", authenticateMiddleware, async (req: AuthenticatedRequest, res, next) => {
-  try {
-    const shipment = await storage.getShipmentById(req.params.id);
-    if (!shipment) {
-      return res.status(404).json({ success: false, message: "Shipment not found" });
-    }
-
-    if (shipment.receivedDate) {
-      return res.status(400).json({ success: false, message: "Shipment already received" });
-    }
-
-    const receivedDate = req.body.receivedDate ? new Date(req.body.receivedDate) : new Date();
-    
-    const updatedShipment = await storage.updateShipment(req.params.id, {
-      receivedDate,
-      updatedBy: req.user!.id,
-    });
-
-    // Get all BOLs in the shipment and update their orders
-    const shipmentWithBols = await storage.getShipmentWithBols(req.params.id);
-    if (shipmentWithBols) {
-      const orderIds = new Set<string>();
-      
-      for (const bolId of shipmentWithBols.bolIds) {
-        const bol = await storage.getBolById(bolId);
-        if (bol) {
-          orderIds.add(bol.orderId);
-        }
-      }
-
-      // Update order statuses to RECEIVED (handle both SHIPPED and SHIPPED-PARTIAL)
-      for (const orderId of orderIds) {
-        const order = await storage.getOrderById(orderId);
-        if (order && (order.status === "SHIPPED" || order.status === "SHIPPED-PARTIAL")) {
-          await storage.updateOrder(orderId, { status: "RECEIVED" });
-          await storage.createOrderEvent({
-            orderId,
-            status: "RECEIVED",
-            createdBy: req.user!.id,
-          });
-        }
-      }
-    }
-
-    res.json({ success: true, data: updatedShipment });
   } catch (error) {
     next(error);
   }
