@@ -142,11 +142,19 @@ export default function InventoryPage() {
                 <div className="space-y-3">
                   {customerData.map((item: any) => (
                     <div
-                      key={item.customerId}
+                      key={item._id || item.customerId}
                       className="flex items-center justify-between p-3 rounded-lg border"
                     >
-                      <span className="font-medium">{item.customerName || item.customerId}</span>
-                      <span className="text-lg font-bold">{item.count}</span>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{item.customer?.name || item.customerName || item._id}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {item.totalOrderCount} order{item.totalOrderCount !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                      <div className="flex flex-col items-end">
+                        <span className="text-lg font-bold">{item.totalQuantityWithCustomer || item.count || 0}</span>
+                        <span className="text-xs text-muted-foreground">assets</span>
+                      </div>
                     </div>
                   ))}
                 </div>
