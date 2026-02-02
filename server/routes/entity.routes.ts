@@ -493,6 +493,33 @@ router.put("/asset/:id", authenticateMiddleware, async (req: AuthenticatedReques
   }
 });
 
+// Bulk asset lookup by tag IDs
+router.post("/asset/tag/bulk", authenticateMiddleware, async (req: AuthenticatedRequest, res, next) => {
+  try {
+    if (!Array.isArray(req.body.tags) || req.body.tags.length === 0) {
+      return res.status(400).json({ success: false, message: "tags array is required" });
+    }
+
+    const tagIds = req.body.tags as string[];
+    const assets = await storage.getAssetsByTags(tagIds);
+
+    // Enhance with product and tag details
+    const assetsWithDetails = await Promise.all(assets.map(async (asset) => {
+      const product = await storage.getProductById(asset.productId);
+      const tag = await storage.getTagById(asset.tagId);
+      return {
+        ...asset,
+        product: product ? { id: product.id, name: product.name } : null,
+        tag: tag ? { id: tag.id, serial: tag.serial, type: tag.type } : null,
+      };
+    }));
+
+    res.json({ success: true, data: assetsWithDetails });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Asset inspection
 router.post("/asset/inspect", authenticateMiddleware, async (req: AuthenticatedRequest, res, next) => {
   try {

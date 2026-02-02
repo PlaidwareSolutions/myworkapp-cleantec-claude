@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { storage, getPagination } from "../storage";
 import { authenticateMiddleware, AuthenticatedRequest } from "../middleware/auth";
-import { generateBolPdf } from "../services/pdf";
+import { generateBolPdf, generateShipmentPdf, ShipmentBolData } from "../services/pdf";
 import { sendOrderNotificationEmail } from "../services/email";
 
 const router = Router();
@@ -407,6 +407,96 @@ router.put("/shipment/:id", authenticateMiddleware, async (req: AuthenticatedReq
     }
 
     const updatedShipment = await storage.updateShipment(req.params.id, updateData);
+    res.json({ success: true, data: updatedShipment });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Get shipment PDF
+router.get("/shipment/:id/pdf", authenticateMiddleware, async (req: AuthenticatedRequest, res, next) => {
+  try {
+    const shipmentWithBols = await storage.getShipmentWithBols(req.params.id);
+    if (!shipmentWithBols) {
+      return res.status(404).json({ success: false, message: "Shipment not found" });
+    }
+
+    const { shipment, bolIds } = shipmentWithBols;
+    const carrier = shipment.carrierId ? await storage.getContactById(shipment.carrierId) : null;
+    const settings = await storage.getSettings();
+
+    const bolsData: ShipmentBolData[] = [];
+    for (const bolId of bolIds) {
+      const bolWithItems = await storage.getBolWithItems(bolId);
+      if (bolWithItems) {
+        const order = await storage.getOrderById(bolWithItems.bol.orderId);
+        const customer = order?.customerId ? await storage.getContactById(order.customerId) : null;
+        bolsData.push({
+          bol: bolWithItems.bol,
+          items: bolWithItems.items,
+          tags: bolWithItems.tags,
+          order: order || null,
+          customer,
+        });
+      }
+    }
+
+    const pdfBuffer = await generateShipmentPdf(shipment, carrier, bolsData, settings);
+    
+    const filename = shipment.referenceId || `shipment-${req.params.id}`;
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}.pdf"`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Receive shipment
+router.post("/shipment/receive/:id", authenticateMiddleware, async (req: AuthenticatedRequest, res, next) => {
+  try {
+    const shipment = await storage.getShipmentById(req.params.id);
+    if (!shipment) {
+      return res.status(404).json({ success: false, message: "Shipment not found" });
+    }
+
+    if (shipment.receivedDate) {
+      return res.status(400).json({ success: false, message: "Shipment already received" });
+    }
+
+    const receivedDate = req.body.receivedDate ? new Date(req.body.receivedDate) : new Date();
+    
+    const updatedShipment = await storage.updateShipment(req.params.id, {
+      receivedDate,
+      updatedBy: req.user!.id,
+    });
+
+    // Get all BOLs in the shipment and update their orders
+    const shipmentWithBols = await storage.getShipmentWithBols(req.params.id);
+    if (shipmentWithBols) {
+      const orderIds = new Set<string>();
+      
+      for (const bolId of shipmentWithBols.bolIds) {
+        const bol = await storage.getBolById(bolId);
+        if (bol) {
+          orderIds.add(bol.orderId);
+        }
+      }
+
+      // Update order statuses to RECEIVED (handle both SHIPPED and SHIPPED-PARTIAL)
+      for (const orderId of orderIds) {
+        const order = await storage.getOrderById(orderId);
+        if (order && (order.status === "SHIPPED" || order.status === "SHIPPED-PARTIAL")) {
+          await storage.updateOrder(orderId, { status: "RECEIVED" });
+          await storage.createOrderEvent({
+            orderId,
+            status: "RECEIVED",
+            createdBy: req.user!.id,
+          });
+        }
+      }
+    }
+
     res.json({ success: true, data: updatedShipment });
   } catch (error) {
     next(error);

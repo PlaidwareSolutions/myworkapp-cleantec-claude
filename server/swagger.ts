@@ -592,6 +592,63 @@ const swaggerDocument = {
         responses: { "200": { description: "Asset updated" } },
       },
     },
+    "/entity/asset/tag/bulk": {
+      post: {
+        tags: ["Assets"],
+        summary: "Get assets by tag IDs in bulk",
+        description: "Looks up assets by their associated tag IDs (EPC codes). Returns assets with expanded product and tag information.",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["tags"],
+                properties: {
+                  tags: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "Array of tag IDs (EPC codes) to look up",
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "List of assets with their product and tag details",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    success: { type: "boolean" },
+                    data: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          id: { type: "string" },
+                          tagId: { type: "string" },
+                          productId: { type: "string" },
+                          lastState: { type: "string" },
+                          lastCustomerId: { type: "string" },
+                          lastOrderId: { type: "string" },
+                          product: { $ref: "#/components/schemas/Product" },
+                          tag: { $ref: "#/components/schemas/Tag" },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          "400": { description: "Invalid request - tags array required" },
+        },
+      },
+    },
     "/entity/asset/inspect": {
       post: {
         tags: ["Assets"],
@@ -819,6 +876,59 @@ const swaggerDocument = {
         summary: "Update shipment",
         parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
         responses: { "200": { description: "Shipment updated" } },
+      },
+    },
+    "/tracking/shipment/{id}/pdf": {
+      get: {
+        tags: ["Shipments"],
+        summary: "Download shipment PDF",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        responses: {
+          "200": {
+            description: "PDF file",
+            content: { "application/pdf": { schema: { type: "string", format: "binary" } } },
+          },
+          "404": { description: "Shipment not found" },
+        },
+      },
+    },
+    "/tracking/shipment/receive/{id}": {
+      post: {
+        tags: ["Shipments"],
+        summary: "Mark shipment as received",
+        description: "Marks a shipment as received and updates related order statuses from SHIPPED/SHIPPED-PARTIAL to RECEIVED",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        requestBody: {
+          required: false,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  receivedDate: { type: "string", format: "date-time", description: "Optional, defaults to current timestamp" },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "Shipment marked as received",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    success: { type: "boolean" },
+                    data: { $ref: "#/components/schemas/Shipment" },
+                  },
+                },
+              },
+            },
+          },
+          "400": { description: "Shipment already received" },
+          "404": { description: "Shipment not found" },
+        },
       },
     },
     "/stats/activity/orders": {

@@ -7,6 +7,7 @@ import {
   Bol,
   BolItem,
   Settings,
+  Shipment,
 } from "@shared/schema";
 import { storage } from "../storage";
 import path from "path";
@@ -453,6 +454,112 @@ export async function generateBolPdf(
         signatureY + 50,
       );
       doc.text("Date: ______________", 380, signatureY + 50);
+
+      addFooter(doc);
+
+      doc.end();
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+export interface ShipmentBolData {
+  bol: Bol;
+  items: BolItem[];
+  tags: string[];
+  order: Order | null;
+  customer: Contact | null;
+}
+
+export async function generateShipmentPdf(
+  shipment: Shipment,
+  carrier: Contact | null,
+  bols: ShipmentBolData[],
+  settings: Settings | undefined,
+): Promise<Buffer> {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const doc = new PDFDocument({ margin: 50, size: "A4" });
+      const chunks: Buffer[] = [];
+
+      doc.on("data", (chunk) => chunks.push(chunk));
+      doc.on("end", () => resolve(Buffer.concat(chunks)));
+      doc.on("error", reject);
+
+      addHeader(doc);
+
+      doc
+        .fontSize(18)
+        .font("Helvetica-Bold")
+        .text("SHIPMENT MANIFEST", { align: "center" });
+      doc.moveDown(1.5);
+
+      doc.fontSize(12).font("Helvetica-Bold").text("Shipment Information");
+      doc.moveDown(0.3);
+      doc.fontSize(10).font("Helvetica");
+
+      const shipmentBoxY = doc.y;
+      doc.rect(50, shipmentBoxY, 495, 80).stroke();
+
+      doc.text(`Shipment Reference: ${shipment.referenceId || "N/A"}`, 60, shipmentBoxY + 10);
+      doc.text(`Order Type: ${shipment.orderType}`, 60, shipmentBoxY + 25);
+      doc.text(`Shipment Date: ${formatDate(shipment.shipmentDate)}`, 60, shipmentBoxY + 40);
+      doc.text(`Total BOLs: ${bols.length}`, 60, shipmentBoxY + 55);
+
+      doc.text(`Carrier: ${carrier?.name || "N/A"}`, 300, shipmentBoxY + 10);
+      doc.text(`Driver: ${shipment.driverName || "N/A"}`, 300, shipmentBoxY + 25);
+      doc.text(`Driver License: ${shipment.driverDl || "N/A"}`, 300, shipmentBoxY + 40);
+      doc.text(`Status: ${shipment.receivedDate ? "RECEIVED" : "SHIPPED"}`, 300, shipmentBoxY + 55);
+
+      doc.y = shipmentBoxY + 95;
+      doc.moveDown();
+
+      doc.fontSize(12).font("Helvetica-Bold").text("Bills of Lading");
+      doc.moveDown(0.5);
+
+      const tableTop = doc.y;
+      const tableLeft = 50;
+      const colWidths = [120, 120, 140, 80];
+
+      doc.fontSize(9).font("Helvetica-Bold");
+      doc.rect(tableLeft, tableTop, 495, 20).stroke();
+      doc.text("BOL Reference", tableLeft + 5, tableTop + 6);
+      doc.text("Order Reference", tableLeft + colWidths[0] + 5, tableTop + 6);
+      doc.text("Customer", tableLeft + colWidths[0] + colWidths[1] + 5, tableTop + 6);
+      doc.text("Items", tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + 5, tableTop + 6);
+
+      doc.font("Helvetica");
+      let currentY = tableTop + 20;
+
+      for (const bolData of bols) {
+        if (currentY > 700) {
+          doc.addPage();
+          currentY = 50;
+        }
+
+        const rowHeight = 18;
+        doc.rect(tableLeft, currentY, 495, rowHeight).stroke();
+
+        doc.text(bolData.bol.referenceId || "N/A", tableLeft + 5, currentY + 5, { width: colWidths[0] - 10 });
+        doc.text(bolData.order?.referenceId || "N/A", tableLeft + colWidths[0] + 5, currentY + 5, { width: colWidths[1] - 10 });
+        doc.text(bolData.customer?.name || "N/A", tableLeft + colWidths[0] + colWidths[1] + 5, currentY + 5, { width: colWidths[2] - 10 });
+        
+        const totalItems = bolData.items.reduce((acc, item) => acc + (item.quantity || 0), 0);
+        doc.text(totalItems.toString(), tableLeft + colWidths[0] + colWidths[1] + colWidths[2] + 5, currentY + 5);
+
+        currentY += rowHeight;
+      }
+
+      doc.y = currentY + 20;
+      doc.moveDown();
+
+      const signatureY = Math.min(doc.y, 720);
+      doc.fontSize(10).font("Helvetica");
+      doc.text("Shipper Signature: ____________________________", 50, signatureY);
+      doc.text("Date: ______________", 380, signatureY);
+      doc.text("Driver Signature: ____________________________", 50, signatureY + 25);
+      doc.text("Date: ______________", 380, signatureY + 25);
 
       addFooter(doc);
 
