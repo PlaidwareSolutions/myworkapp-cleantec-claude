@@ -5,6 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Truck, Download, FileText, ChevronDown, ChevronRight, Search, X, Filter } from "lucide-react";
 import { bolsApi } from "@/lib/api";
@@ -219,11 +227,11 @@ export default function ShipmentsPage() {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {isLoading ? (
-            <div className="space-y-3">
+            <div className="p-6 space-y-3">
               {[1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-20 w-full" />
+                <Skeleton key={i} className="h-12 w-full" />
               ))}
             </div>
           ) : filteredShipments.length === 0 ? (
@@ -241,117 +249,154 @@ export default function ShipmentsPage() {
               )}
             </div>
           ) : (
-            <div className="space-y-3">
-              <div className="text-sm text-muted-foreground mb-2">
+            <>
+              <div className="text-sm text-muted-foreground px-6 py-3 border-b">
                 Showing {filteredShipments.length} of {shipments.length} shipments
               </div>
-              {filteredShipments.map((shipment: any) => {
-                const shipmentBols = (shipment.bols || [])
-                  .map((bolId: string) => bolsMap.get(bolId))
-                  .filter(Boolean);
-                const isExpanded = expandedShipments.has(shipment.id);
-                const hasBols = shipmentBols.length > 0;
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-10"></TableHead>
+                      <TableHead>Reference ID</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Shipper</TableHead>
+                      <TableHead>Receiver</TableHead>
+                      <TableHead>Carrier</TableHead>
+                      <TableHead>Driver</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead className="text-center">BOLs</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredShipments.map((shipment: any) => {
+                      const shipmentBols = (shipment.bols || [])
+                        .map((bolId: string) => bolsMap.get(bolId))
+                        .filter(Boolean);
+                      const isExpanded = expandedShipments.has(shipment.id);
+                      const hasBols = shipmentBols.length > 0;
 
-                return (
-                  <Collapsible
-                    key={shipment.id}
-                    open={isExpanded}
-                    onOpenChange={() => hasBols && toggleShipment(shipment.id)}
-                  >
-                    <div className="border rounded-lg">
-                      <CollapsibleTrigger asChild disabled={!hasBols}>
-                        <div
-                          className={`flex items-center justify-between p-4 ${hasBols ? "cursor-pointer hover-elevate" : ""}`}
-                          data-testid={`shipment-row-${shipment.id}`}
+                      return (
+                        <Collapsible
+                          key={shipment.id}
+                          open={isExpanded}
+                          onOpenChange={() => hasBols && toggleShipment(shipment.id)}
+                          asChild
                         >
-                          <div className="flex items-center gap-3">
-                            {hasBols ? (
-                              isExpanded ? (
-                                <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                              ) : (
-                                <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                              )
-                            ) : (
-                              <div className="w-4" />
-                            )}
-                            <div>
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <p className="font-semibold">{shipment.referenceId}</p>
-                                <Badge className={getStatusColor(shipment.shipmentStatus)}>
-                                  {shipment.shipmentStatus || "PENDING"}
-                                </Badge>
-                                <Badge variant="outline">{shipment.orderType}</Badge>
-                              </div>
-                              <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1 flex-wrap">
-                                {shipment.shipper?.name && <span>Shipper: {shipment.shipper.name}</span>}
-                                {shipment.receiver?.name && <span>Receiver: {shipment.receiver.name}</span>}
-                                <span>Carrier: {shipment.carrier?.name || "N/A"}</span>
-                                <span>Date: {new Date(shipment.shipmentDate || shipment.createdAt).toLocaleDateString()}</span>
-                                {shipment.driverName && <span>Driver: {shipment.driverName}</span>}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {hasBols && (
-                              <Badge variant="secondary" className="gap-1">
-                                <FileText className="h-3 w-3" />
-                                {shipmentBols.length} BOL{shipmentBols.length !== 1 ? "s" : ""}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      </CollapsibleTrigger>
-
-                      <CollapsibleContent>
-                        <div className="border-t bg-muted/30 p-4">
-                          <div className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
-                            <FileText className="h-4 w-4" />
-                            Bills of Lading
-                          </div>
-                          <div className="space-y-2">
-                            {shipmentBols.map((bol: any) => (
-                              <div
-                                key={bol.id}
-                                className="flex items-center justify-between p-3 rounded-lg border bg-background"
-                                data-testid={`bol-row-${bol.id}`}
+                          <>
+                            <CollapsibleTrigger asChild disabled={!hasBols}>
+                              <TableRow
+                                className={hasBols ? "cursor-pointer hover-elevate" : ""}
+                                data-testid={`shipment-row-${shipment.id}`}
                               >
-                                <div className="flex items-center gap-3">
-                                  <FileText className="h-4 w-4 text-muted-foreground" />
-                                  <div>
-                                    <p className="font-medium">{bol.referenceId}</p>
-                                    <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
-                                      {bol.order && (
-                                        <span>Order: {bol.order.referenceId}</span>
-                                      )}
-                                      {bol.order?.customer && (
-                                        <span>Customer: {bol.order.customer.name}</span>
-                                      )}
-                                      <span>Created: {new Date(bol.createdAt).toLocaleDateString()}</span>
+                                <TableCell className="w-10">
+                                  {hasBols ? (
+                                    isExpanded ? (
+                                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                    ) : (
+                                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                    )
+                                  ) : null}
+                                </TableCell>
+                                <TableCell className="font-medium">{shipment.referenceId}</TableCell>
+                                <TableCell>
+                                  <Badge className={getStatusColor(shipment.shipmentStatus)}>
+                                    {shipment.shipmentStatus || "PENDING"}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="outline">{shipment.orderType}</Badge>
+                                </TableCell>
+                                <TableCell className="text-muted-foreground">
+                                  {shipment.shipper?.name || "-"}
+                                </TableCell>
+                                <TableCell className="text-muted-foreground">
+                                  {shipment.receiver?.name || "-"}
+                                </TableCell>
+                                <TableCell className="text-muted-foreground">
+                                  {shipment.carrier?.name || "-"}
+                                </TableCell>
+                                <TableCell className="text-muted-foreground">
+                                  {shipment.driverName || "-"}
+                                </TableCell>
+                                <TableCell className="text-muted-foreground">
+                                  {new Date(shipment.shipmentDate || shipment.createdAt).toLocaleDateString()}
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  {hasBols ? (
+                                    <Badge variant="secondary" className="gap-1">
+                                      <FileText className="h-3 w-3" />
+                                      {shipmentBols.length}
+                                    </Badge>
+                                  ) : (
+                                    <span className="text-muted-foreground">-</span>
+                                  )}
+                                </TableCell>
+                              </TableRow>
+                            </CollapsibleTrigger>
+
+                            <CollapsibleContent asChild>
+                              <TableRow className="bg-muted/30 hover:bg-muted/30">
+                                <TableCell colSpan={10} className="p-0">
+                                  <div className="p-4">
+                                    <div className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+                                      <FileText className="h-4 w-4" />
+                                      Bills of Lading
                                     </div>
+                                    <Table>
+                                      <TableHeader>
+                                        <TableRow>
+                                          <TableHead>BOL Reference</TableHead>
+                                          <TableHead>Order</TableHead>
+                                          <TableHead>Customer</TableHead>
+                                          <TableHead>Created</TableHead>
+                                          <TableHead className="text-right">Actions</TableHead>
+                                        </TableRow>
+                                      </TableHeader>
+                                      <TableBody>
+                                        {shipmentBols.map((bol: any) => (
+                                          <TableRow key={bol.id} data-testid={`bol-row-${bol.id}`}>
+                                            <TableCell className="font-medium">{bol.referenceId}</TableCell>
+                                            <TableCell className="text-muted-foreground">
+                                              {bol.order?.referenceId || "-"}
+                                            </TableCell>
+                                            <TableCell className="text-muted-foreground">
+                                              {bol.order?.customer?.name || "-"}
+                                            </TableCell>
+                                            <TableCell className="text-muted-foreground">
+                                              {new Date(bol.createdAt).toLocaleDateString()}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                              <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  downloadBolPdf(bol.id, bol.referenceId);
+                                                }}
+                                                data-testid={`button-download-bol-${bol.id}`}
+                                              >
+                                                <Download className="h-4 w-4 mr-1" />
+                                                PDF
+                                              </Button>
+                                            </TableCell>
+                                          </TableRow>
+                                        ))}
+                                      </TableBody>
+                                    </Table>
                                   </div>
-                                </div>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    downloadBolPdf(bol.id, bol.referenceId);
-                                  }}
-                                  data-testid={`button-download-bol-${bol.id}`}
-                                >
-                                  <Download className="h-4 w-4 mr-1" />
-                                  PDF
-                                </Button>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </CollapsibleContent>
-                    </div>
-                  </Collapsible>
-                );
-              })}
-            </div>
+                                </TableCell>
+                              </TableRow>
+                            </CollapsibleContent>
+                          </>
+                        </Collapsible>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
