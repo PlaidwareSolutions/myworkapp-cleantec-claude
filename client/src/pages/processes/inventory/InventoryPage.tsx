@@ -214,8 +214,7 @@ export default function InventoryPage() {
             <div className="space-y-3">
               {customerData.map((item: any) => {
                 const assetCount = item.totalQuantityWithCustomer || item.count || 0;
-                const maxAssets = Math.max(...customerData.map((c: any) => c.totalQuantityWithCustomer || c.count || 0));
-                const barWidth = maxAssets > 0 ? (assetCount / maxAssets) * 100 : 0;
+                const percentage = withCustomers > 0 ? (assetCount / withCustomers) * 100 : 0;
                 
                 return (
                   <div
@@ -225,7 +224,7 @@ export default function InventoryPage() {
                   >
                     <div 
                       className="absolute inset-0 bg-blue-100 dark:bg-blue-950/30 transition-all duration-500"
-                      style={{ width: `${barWidth}%` }}
+                      style={{ width: `${percentage}%` }}
                     />
                     <div className="relative flex items-center justify-between">
                       <div className="flex flex-col">
@@ -235,7 +234,9 @@ export default function InventoryPage() {
                         </span>
                       </div>
                       <div className="flex flex-col items-end">
-                        <span className="text-lg font-bold">{assetCount.toLocaleString()}</span>
+                        <span className="text-lg font-bold">
+                          {assetCount.toLocaleString()} <span className="text-sm font-normal text-muted-foreground">({percentage.toFixed(1)}%)</span>
+                        </span>
                         <span className="text-xs text-muted-foreground">assets</span>
                       </div>
                     </div>
