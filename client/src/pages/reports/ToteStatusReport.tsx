@@ -28,10 +28,11 @@ import {
   CheckCircle,
   AlertCircle,
   Truck,
+  AlertTriangle,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
-type Category = "rtu" | "dirty" | "inuse";
+type Category = "rtu" | "dirty" | "inuse" | "damaged";
 
 interface ToteData {
   assetId: string;
@@ -98,6 +99,12 @@ const CATEGORY_CONFIG = {
     icon: Truck,
     color: "text-blue-600 dark:text-blue-400",
     bgColor: "bg-blue-50 dark:bg-blue-950",
+  },
+  damaged: {
+    label: "Damaged",
+    icon: AlertTriangle,
+    color: "text-red-600 dark:text-red-400",
+    bgColor: "bg-red-50 dark:bg-red-950",
   },
 };
 
@@ -250,6 +257,27 @@ export default function ToteStatusReport() {
         </CardContent>
       </Card>
 
+      <div className="flex flex-wrap gap-2">
+        {(Object.keys(CATEGORY_CONFIG) as Category[]).map((cat) => {
+          const config = CATEGORY_CONFIG[cat];
+          const Icon = config.icon;
+          const isActive = category === cat;
+          return (
+            <Button
+              key={cat}
+              variant={isActive ? "default" : "outline"}
+              size="sm"
+              onClick={() => handleCategoryChange(cat)}
+              className={isActive ? "" : `${config.color}`}
+              data-testid={`button-filter-${cat}`}
+            >
+              <Icon className="h-4 w-4 mr-1" />
+              {config.label}
+            </Button>
+          );
+        })}
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
@@ -273,6 +301,7 @@ export default function ToteStatusReport() {
                   <SelectItem value="rtu">Ready To Use</SelectItem>
                   <SelectItem value="dirty">Dirty</SelectItem>
                   <SelectItem value="inuse">In Use</SelectItem>
+                  <SelectItem value="damaged">Damaged</SelectItem>
                 </SelectContent>
               </Select>
             </div>

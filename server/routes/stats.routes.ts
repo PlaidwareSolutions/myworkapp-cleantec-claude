@@ -679,11 +679,12 @@ router.get(
   }
 );
 
-// Tote Status Report - RTU / Dirty / In Use
+// Tote Status Report - RTU / Dirty / In Use / Damaged
 const TOTE_STATUS_CATEGORIES = {
   rtu: ["CLEANED"],           // Ready To Use
   dirty: ["RETURNED", "FIXED"], // Dirty - needs cleaning
   inuse: ["ASSIGNED", "PROCESSING"], // In Use - out in field
+  damaged: ["DAMAGED"],       // Damaged - needs repair
 } as const;
 
 router.get(
@@ -912,7 +913,7 @@ router.get(
           totalCount: filteredCount, // Shows filtered count when filters applied
           categoryTotal: categoryTotal?.count || 0, // Total in this category regardless of filters
           category,
-          categoryLabel: category === "rtu" ? "Ready To Use" : category === "dirty" ? "Dirty" : "In Use",
+          categoryLabel: category === "rtu" ? "Ready To Use" : category === "dirty" ? "Dirty" : category === "damaged" ? "Damaged" : "In Use",
         },
         pagination: {
           page,
@@ -1103,7 +1104,7 @@ router.get(
         ...filteredRows.map(row => headers.map(h => `"${(row as any)[h]}"`).join(","))
       ].join("\n");
 
-      const categoryLabel = category === "rtu" ? "ready-to-use" : category === "dirty" ? "dirty" : "in-use";
+      const categoryLabel = category === "rtu" ? "ready-to-use" : category === "dirty" ? "dirty" : category === "damaged" ? "damaged" : "in-use";
       res.setHeader("Content-Type", "text/csv");
       res.setHeader("Content-Disposition", `attachment; filename="tote-status-${categoryLabel}-${new Date().toISOString().split("T")[0]}.csv"`);
       res.send(csvContent);
