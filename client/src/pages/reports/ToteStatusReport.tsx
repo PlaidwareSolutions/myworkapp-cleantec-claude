@@ -287,123 +287,125 @@ export default function ToteStatusReport() {
         })}
       </div>
 
-      <Card data-testid="card-summary">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <CategoryIcon className={`h-5 w-5 ${CATEGORY_CONFIG[category].color}`} />
-            {CATEGORY_CONFIG[category].label}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-3xl font-bold" data-testid="text-total-count">
-            {isLoading ? <Skeleton className="h-9 w-24" /> : summary?.totalCount.toLocaleString() || 0}
-          </div>
-          <p className="text-sm text-muted-foreground">Total totes</p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <Filter className="h-4 w-4" />
-            Filters
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Customer</label>
-              <Select
-                value={customerId}
-                onValueChange={(v) => {
-                  setCustomerId(v === "all" ? "" : v);
-                  setPage(1);
-                }}
-                data-testid="select-customer"
-              >
-                <SelectTrigger data-testid="select-customer-trigger">
-                  <SelectValue placeholder="All Customers" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Customers</SelectItem>
-                  {customers.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+      <div className="flex flex-col lg:flex-row gap-4">
+        <Card data-testid="card-summary" className="lg:w-48 shrink-0">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <CategoryIcon className={`h-5 w-5 ${CATEGORY_CONFIG[category].color}`} />
+              {CATEGORY_CONFIG[category].label}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold" data-testid="text-total-count">
+              {isLoading ? <Skeleton className="h-9 w-24" /> : summary?.totalCount.toLocaleString() || 0}
             </div>
+            <p className="text-sm text-muted-foreground">Total totes</p>
+          </CardContent>
+        </Card>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Carrier</label>
-              <Select
-                value={carrierId}
-                onValueChange={(v) => {
-                  setCarrierId(v === "all" ? "" : v);
-                  setPage(1);
-                }}
-                data-testid="select-carrier"
-              >
-                <SelectTrigger data-testid="select-carrier-trigger">
-                  <SelectValue placeholder="All Carriers" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Carriers</SelectItem>
-                  {carriers.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Search Tote ID</label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by Tag ID..."
-                  value={search}
-                  onChange={(e) => {
-                    setSearch(e.target.value);
+        <Card className="flex-1">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Filter className="h-4 w-4" />
+              Filters
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Customer</label>
+                <Select
+                  value={customerId}
+                  onValueChange={(v) => {
+                    setCustomerId(v === "all" ? "" : v);
                     setPage(1);
                   }}
-                  className="pl-9"
-                  data-testid="input-search"
+                  data-testid="select-customer"
+                >
+                  <SelectTrigger data-testid="select-customer-trigger">
+                    <SelectValue placeholder="All Customers" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Customers</SelectItem>
+                    {customers.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Carrier</label>
+                <Select
+                  value={carrierId}
+                  onValueChange={(v) => {
+                    setCarrierId(v === "all" ? "" : v);
+                    setPage(1);
+                  }}
+                  data-testid="select-carrier"
+                >
+                  <SelectTrigger data-testid="select-carrier-trigger">
+                    <SelectValue placeholder="All Carriers" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Carriers</SelectItem>
+                    {carriers.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Search Tote ID</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by Tag ID..."
+                    value={search}
+                    onChange={(e) => {
+                      setSearch(e.target.value);
+                      setPage(1);
+                    }}
+                    className="pl-9"
+                    data-testid="input-search"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Inspection From</label>
+                <Input
+                  type="date"
+                  value={inspectionDateFrom}
+                  onChange={(e) => {
+                    setInspectionDateFrom(e.target.value);
+                    setPage(1);
+                  }}
+                  data-testid="input-date-from"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Inspection To</label>
+                <Input
+                  type="date"
+                  value={inspectionDateTo}
+                  onChange={(e) => {
+                    setInspectionDateTo(e.target.value);
+                    setPage(1);
+                  }}
+                  data-testid="input-date-to"
                 />
               </div>
             </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Inspection From</label>
-              <Input
-                type="date"
-                value={inspectionDateFrom}
-                onChange={(e) => {
-                  setInspectionDateFrom(e.target.value);
-                  setPage(1);
-                }}
-                data-testid="input-date-from"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Inspection To</label>
-              <Input
-                type="date"
-                value={inspectionDateTo}
-                onChange={(e) => {
-                  setInspectionDateTo(e.target.value);
-                  setPage(1);
-                }}
-                data-testid="input-date-to"
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
 
       <Card>
         <CardHeader>
