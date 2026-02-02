@@ -315,8 +315,27 @@ router.get(
       const now = new Date();
 
       // Helper function to calculate cycle time for an order
-      const calculateCycleTime = async (order: any): Promise<{ cycleDays: number; returnDate: Date | null; isActive: boolean }> => {
+      const calculateCycleTime = async (order: any): Promise<{ cycleDays: number; outboundDate: Date | null; returnDate: Date | null; isActive: boolean }> => {
+        let outboundDate: Date | null = null;
         let returnDate: Date | null = null;
+        
+        // Get outbound date from asset_events where state is ASSIGNED and process is SHIPPING
+        const outboundEvents = await db
+          .select({ createdAt: assetEvents.createdAt })
+          .from(assetEvents)
+          .where(
+            and(
+              eq(assetEvents.outboundOrderId, order.id),
+              eq(assetEvents.state, "ASSIGNED"),
+              eq(assetEvents.process, "SHIPPING")
+            )
+          )
+          .orderBy(desc(assetEvents.createdAt))
+          .limit(1);
+        
+        if (outboundEvents.length > 0) {
+          outboundDate = outboundEvents[0].createdAt;
+        }
         
         if (closedStatuses.includes(order.status as string)) {
           const returnEvents = await db
@@ -337,7 +356,6 @@ router.get(
           }
         }
 
-        const outboundDate = order.shipDate || order.createdAt;
         let cycleDays = 0;
         
         if (outboundDate) {
@@ -346,13 +364,13 @@ router.get(
         }
 
         const isActive = activeStatuses.includes(order.status as string);
-        return { cycleDays, returnDate, isActive };
+        return { cycleDays, outboundDate, returnDate, isActive };
       };
 
       // Calculate cycle time for paginated orders (for display)
       const ordersWithCycleTime = await Promise.all(
         ordersWithCustomer.map(async (order) => {
-          const { cycleDays, returnDate, isActive } = await calculateCycleTime(order);
+          const { cycleDays, outboundDate, returnDate, isActive } = await calculateCycleTime(order);
           const shippedCount = await storage.countAssetEventsByOrder(order.id, "ASSIGNED", "SHIPPING");
 
           return {
@@ -361,7 +379,7 @@ router.get(
             customerId: order.customerId,
             customerName: order.customerName,
             poNumber: order.poNumber,
-            outboundDate: order.shipDate || order.createdAt,
+            outboundDate: outboundDate,
             returnDate: returnDate,
             cycleDays,
             status: order.status,
@@ -612,7 +630,26 @@ router.get(
       // Build CSV data
       const csvRows = await Promise.all(
         ordersWithCustomer.map(async (order) => {
+          let outboundDate: Date | null = null;
           let returnDate: Date | null = null;
+          
+          // Get outbound date from asset_events where state is ASSIGNED and process is SHIPPING
+          const outboundEvents = await db
+            .select({ createdAt: assetEvents.createdAt })
+            .from(assetEvents)
+            .where(
+              and(
+                eq(assetEvents.outboundOrderId, order.id),
+                eq(assetEvents.state, "ASSIGNED"),
+                eq(assetEvents.process, "SHIPPING")
+              )
+            )
+            .orderBy(desc(assetEvents.createdAt))
+            .limit(1);
+          
+          if (outboundEvents.length > 0) {
+            outboundDate = outboundEvents[0].createdAt;
+          }
           
           if (closedStatuses.includes(order.status as string)) {
             const returnEvents = await db
@@ -633,7 +670,6 @@ router.get(
             }
           }
 
-          const outboundDate = order.shipDate || order.createdAt;
           let cycleDays = 0;
           
           if (outboundDate) {
