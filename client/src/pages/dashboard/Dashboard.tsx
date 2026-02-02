@@ -140,61 +140,69 @@ export default function Dashboard() {
 
       {hasPermission("Analytics") && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <Card className="border-l-4 border-l-blue-500">
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Assigned</CardTitle>
-              <Package className="h-4 w-4 text-muted-foreground" />
+              <div className="rounded-full bg-blue-100 p-2 dark:bg-blue-900">
+                <Package className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              </div>
             </CardHeader>
             <CardContent>
               {assetLoading ? (
                 <Skeleton className="h-8 w-20" />
               ) : (
-                <div className="text-2xl font-bold">{stats.ASSIGNED || 0}</div>
+                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.ASSIGNED || 0}</div>
               )}
               <p className="text-xs text-muted-foreground">Assets with customers</p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <Card className="border-l-4 border-l-amber-500">
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Processing</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
+              <div className="rounded-full bg-amber-100 p-2 dark:bg-amber-900">
+                <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              </div>
             </CardHeader>
             <CardContent>
               {assetLoading ? (
                 <Skeleton className="h-8 w-20" />
               ) : (
-                <div className="text-2xl font-bold">{stats.PROCESSING || 0}</div>
+                <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">{stats.PROCESSING || 0}</div>
               )}
               <p className="text-xs text-muted-foreground">Being cleaned/processed</p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <Card className="border-l-4 border-l-green-500">
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Cleaned</CardTitle>
-              <CheckCircle className="h-4 w-4 text-muted-foreground" />
+              <div className="rounded-full bg-green-100 p-2 dark:bg-green-900">
+                <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+              </div>
             </CardHeader>
             <CardContent>
               {assetLoading ? (
                 <Skeleton className="h-8 w-20" />
               ) : (
-                <div className="text-2xl font-bold">{stats.CLEANED || 0}</div>
+                <div className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.CLEANED || 0}</div>
               )}
               <p className="text-xs text-muted-foreground">Ready for assignment</p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <Card className="border-l-4 border-l-orange-500">
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Returned</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <div className="rounded-full bg-orange-100 p-2 dark:bg-orange-900">
+                <TrendingUp className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+              </div>
             </CardHeader>
             <CardContent>
               {assetLoading ? (
                 <Skeleton className="h-8 w-20" />
               ) : (
-                <div className="text-2xl font-bold">{stats.RETURNED || 0}</div>
+                <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">{stats.RETURNED || 0}</div>
               )}
               <p className="text-xs text-muted-foreground">Awaiting processing</p>
             </CardContent>
