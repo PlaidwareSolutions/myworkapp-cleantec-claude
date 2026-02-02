@@ -717,11 +717,43 @@ router.get(
 
 // Tote Status Report - RTU / Dirty / In Use / Damaged
 const TOTE_STATUS_CATEGORIES = {
+  all: ["CLEANED", "RETURNED", "FIXED", "ASSIGNED", "PROCESSING", "DAMAGED"], // All categories
   rtu: ["CLEANED"],           // Ready To Use
   dirty: ["RETURNED", "FIXED"], // Dirty - needs cleaning
   inuse: ["ASSIGNED", "PROCESSING"], // In Use - out in field
   damaged: ["DAMAGED"],       // Damaged - needs repair
 } as const;
+
+// Get counts for all tote status categories
+router.get(
+  "/tote-status/counts",
+  authenticateMiddleware,
+  authorizeMiddleware(["Analytics"], ["OrderManagement"]),
+  async (req, res, next) => {
+    try {
+      const counts: Record<string, number> = {};
+      
+      // Get count for each category
+      for (const [category, states] of Object.entries(TOTE_STATUS_CATEGORIES)) {
+        if (category === "all") continue; // Skip 'all' as we'll calculate it
+        
+        const [result] = await db
+          .select({ count: count() })
+          .from(assets)
+          .where(inArray(assets.lastState, [...states] as any));
+        
+        counts[category] = result?.count || 0;
+      }
+      
+      // Calculate total for 'all'
+      counts.all = counts.rtu + counts.dirty + counts.inuse + counts.damaged;
+      
+      res.json({ success: true, data: counts });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 router.get(
   "/tote-status",

@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
-type Category = "rtu" | "dirty" | "inuse" | "damaged";
+type Category = "all" | "rtu" | "dirty" | "inuse" | "damaged";
 
 interface ToteData {
   assetId: string;
@@ -82,6 +82,12 @@ function formatDate(dateStr: string | null): string {
 }
 
 const CATEGORY_CONFIG = {
+  all: {
+    label: "All",
+    icon: Package,
+    color: "text-foreground",
+    bgColor: "bg-muted",
+  },
   rtu: {
     label: "Ready To Use",
     icon: CheckCircle,
@@ -110,7 +116,7 @@ const CATEGORY_CONFIG = {
 
 export default function ToteStatusReport() {
   const { hasPermission } = useAuth();
-  const [category, setCategory] = useState<Category>("rtu");
+  const [category, setCategory] = useState<Category>("all");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [customerId, setCustomerId] = useState<string>("");
@@ -166,6 +172,20 @@ export default function ToteStatusReport() {
       return res.json();
     },
   });
+
+  const { data: countsData } = useQuery<{ success: boolean; data: Record<string, number> }>({
+    queryKey: ["/api/stats/tote-status/counts"],
+    queryFn: async () => {
+      const res = await fetch("/api/stats/tote-status/counts", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("cleantech_token")}`,
+        },
+      });
+      return res.json();
+    },
+  });
+
+  const categoryCounts = countsData?.data || {};
 
   const totes = data?.data || [];
   const summary = data?.summary;
@@ -242,6 +262,31 @@ export default function ToteStatusReport() {
         </Button>
       </div>
 
+      <div className="flex flex-wrap gap-2">
+        {(Object.keys(CATEGORY_CONFIG) as Category[]).map((cat) => {
+          const config = CATEGORY_CONFIG[cat];
+          const Icon = config.icon;
+          const isActive = category === cat;
+          const catCount = categoryCounts[cat] || 0;
+          return (
+            <Button
+              key={cat}
+              variant={isActive ? "default" : "outline"}
+              size="sm"
+              onClick={() => handleCategoryChange(cat)}
+              className={isActive ? "" : `${config.color}`}
+              data-testid={`button-filter-${cat}`}
+            >
+              <Icon className="h-4 w-4 mr-1" />
+              {config.label}
+              <Badge variant="secondary" className="ml-1.5 text-xs">
+                {catCount.toLocaleString()}
+              </Badge>
+            </Button>
+          );
+        })}
+      </div>
+
       <Card data-testid="card-summary">
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
@@ -257,27 +302,6 @@ export default function ToteStatusReport() {
         </CardContent>
       </Card>
 
-      <div className="flex flex-wrap gap-2">
-        {(Object.keys(CATEGORY_CONFIG) as Category[]).map((cat) => {
-          const config = CATEGORY_CONFIG[cat];
-          const Icon = config.icon;
-          const isActive = category === cat;
-          return (
-            <Button
-              key={cat}
-              variant={isActive ? "default" : "outline"}
-              size="sm"
-              onClick={() => handleCategoryChange(cat)}
-              className={isActive ? "" : `${config.color}`}
-              data-testid={`button-filter-${cat}`}
-            >
-              <Icon className="h-4 w-4 mr-1" />
-              {config.label}
-            </Button>
-          );
-        })}
-      </div>
-
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
@@ -287,25 +311,6 @@ export default function ToteStatusReport() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Category</label>
-              <Select
-                value={category}
-                onValueChange={(v) => handleCategoryChange(v as Category)}
-                data-testid="select-category"
-              >
-                <SelectTrigger data-testid="select-category-trigger">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="rtu">Ready To Use</SelectItem>
-                  <SelectItem value="dirty">Dirty</SelectItem>
-                  <SelectItem value="inuse">In Use</SelectItem>
-                  <SelectItem value="damaged">Damaged</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
             <div className="space-y-2">
               <label className="text-sm font-medium">Customer</label>
               <Select
