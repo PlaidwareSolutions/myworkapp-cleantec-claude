@@ -139,6 +139,16 @@ router.get(
         const customer = await storage.getContactById(order.customerId);
         const carrier = order.carrierId ? await storage.getContactById(order.carrierId) : null;
 
+        // Get shipped and returned dates from order events
+        const orderEventsData = await storage.getOrderEvents(order.id);
+        
+        const shippedEvent = orderEventsData.find(e => 
+          e.status === "SHIPPED" || e.status === "SHIPPED-PARTIAL"
+        );
+        const returnedEvent = orderEventsData.find(e => 
+          e.status === "RETURNED" || e.status === "RETURNED-PARTIAL" || e.status === "MANUAL RECONCILIATION"
+        );
+
         return {
           ...order,
           customer: customer ? { id: customer.id, name: customer.name, email: customer.email } : null,
@@ -147,6 +157,8 @@ router.get(
           shippedItems,
           totalRequiredQuantity,
           totalShippedQuantity,
+          shippedDate: shippedEvent?.createdAt || null,
+          returnedDate: returnedEvent?.createdAt || null,
         };
       }));
 

@@ -266,6 +266,8 @@ export default function OrdersPage() {
                     <TableHead>Type</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Items</TableHead>
+                    <TableHead>Shipped Date</TableHead>
+                    <TableHead>Returned Date</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -297,6 +299,12 @@ export default function OrdersPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>{order.totalRequiredQuantity || 0}</TableCell>
+                      <TableCell>
+                        {order.shippedDate ? new Date(order.shippedDate).toLocaleDateString() : "-"}
+                      </TableCell>
+                      <TableCell>
+                        {order.returnedDate ? new Date(order.returnedDate).toLocaleDateString() : "-"}
+                      </TableCell>
                       <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex justify-end gap-1">
                           <Link href={`/processes/orders/update/${order.id}`}>
