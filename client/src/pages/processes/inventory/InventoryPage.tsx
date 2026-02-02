@@ -188,8 +188,16 @@ export default function InventoryPage() {
       </Card>
 
       <Card data-testid="card-by-customer">
-        <CardHeader>
-          <CardTitle>Assets by Customer</CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
+          <div className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-muted-foreground" />
+            <CardTitle className="text-lg font-semibold">Assets by Customer</CardTitle>
+          </div>
+          {customerLoading ? (
+            <Skeleton className="h-8 w-20" />
+          ) : (
+            <span className="text-2xl font-bold" data-testid="text-total-with-customers">{withCustomers.toLocaleString()}</span>
+          )}
         </CardHeader>
         <CardContent>
           {customerLoading ? (
