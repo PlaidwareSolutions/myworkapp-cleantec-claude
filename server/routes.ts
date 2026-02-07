@@ -19,7 +19,7 @@ export async function registerRoutes(
   // Setup Swagger documentation at /api-docs
   setupSwagger(app);
 
-  // API routes
+  // API routes (primary /api prefix)
   app.use("/api/user", userRoutes);
   app.use("/api/contact", contactRoutes);
   app.use("/api/entity", entityRoutes);
@@ -30,8 +30,22 @@ export async function registerRoutes(
   app.use("/api/hierarchy", hierarchyRoutes);
   app.use("/api/docs", docsRoutes);
 
+  // Alternate /v1 prefix for external clients (mobile apps, etc.)
+  app.use("/v1/user", userRoutes);
+  app.use("/v1/contact", contactRoutes);
+  app.use("/v1/entity", entityRoutes);
+  app.use("/v1/order", orderRoutes);
+  app.use("/v1/tracking", trackingRoutes);
+  app.use("/v1/stats", statsRoutes);
+  app.use("/v1/settings", settingsRoutes);
+  app.use("/v1/hierarchy", hierarchyRoutes);
+  app.use("/v1/docs", docsRoutes);
+
   // Health check endpoint
   app.get("/api/health", (req, res) => {
+    res.json({ success: true, message: "CleanTech API is running", timestamp: new Date().toISOString() });
+  });
+  app.get("/v1/health", (req, res) => {
     res.json({ success: true, message: "CleanTech API is running", timestamp: new Date().toISOString() });
   });
 

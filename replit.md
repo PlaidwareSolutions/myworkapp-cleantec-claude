@@ -33,6 +33,7 @@ Detailed documentation is available in the `/docs` folder:
 - Email notification service (SMTP configurable)
 - Swagger documentation at /api-docs
 - Statistics and analytics endpoints
+- Dual API prefix support: `/api/*` and `/v1/*` (for external/mobile clients)
 
 ## Login Credentials
 - **Username**: admin
