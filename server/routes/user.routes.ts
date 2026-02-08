@@ -176,10 +176,20 @@ router.post("/login", async (req, res, next) => {
 
     await storage.updateContact(contact.id, { systemUserLastLogin: new Date() });
 
+    const systemUser = {
+      active: contact.systemUserActive,
+      username: contact.systemUserUsername,
+      passwordLastChanged: contact.systemUserPasswordLastChanged,
+      lastLogin: contact.systemUserLastLogin,
+      createdBy: contact.systemUserCreatedBy,
+      updatedBy: contact.systemUserUpdatedBy,
+    };
+
     const contactData = {
       ...contact,
       systemUserPasswordHash: undefined,
       type: role,
+      systemUser,
     };
 
     res.json({
@@ -203,12 +213,21 @@ router.get("/me", authenticateMiddleware, async (req: AuthenticatedRequest, res,
       return res.status(404).json({ success: false, message: "User not found" });
     }
     const role = await storage.getRoleById(contact.type);
+    const systemUser = {
+      active: contact.systemUserActive,
+      username: contact.systemUserUsername,
+      passwordLastChanged: contact.systemUserPasswordLastChanged,
+      lastLogin: contact.systemUserLastLogin,
+      createdBy: contact.systemUserCreatedBy,
+      updatedBy: contact.systemUserUpdatedBy,
+    };
     res.json({ 
       success: true, 
       contact: { 
         ...contact, 
         systemUserPasswordHash: undefined,
-        type: role 
+        type: role,
+        systemUser,
       } 
     });
   } catch (error) {
