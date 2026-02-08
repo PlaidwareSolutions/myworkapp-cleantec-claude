@@ -28,11 +28,11 @@ export async function authenticateMiddleware(
 ) {
   try {
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    if (!authHeader) {
       return res.status(401).json({ success: false, message: "No token provided" });
     }
 
-    const token = authHeader.substring(7);
+    const token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
     const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
 
     const contact = await storage.getContactById(decoded.id);
