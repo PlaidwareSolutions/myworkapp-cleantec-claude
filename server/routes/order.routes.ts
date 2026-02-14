@@ -135,6 +135,7 @@ router.get(
         
         const totalRequiredQuantity = items.reduce((acc, item) => acc + (item.requiredQuantity || 0), 0);
         const totalShippedQuantity = shippedItems.reduce((acc, item) => acc + item.shippedQuantity, 0);
+        const totalReturnedQuantity = await storage.countAssetEventsByOrder(order.id, "RETURNED", "RECEIVING");
 
         const customer = await storage.getContactById(order.customerId);
         const carrier = order.carrierId ? await storage.getContactById(order.carrierId) : null;
@@ -157,6 +158,7 @@ router.get(
           shippedItems,
           totalRequiredQuantity,
           totalShippedQuantity,
+          totalReturnedQuantity,
           shippedDate: shippedEvent?.createdAt || null,
           returnedDate: returnedEvent?.createdAt || null,
         };

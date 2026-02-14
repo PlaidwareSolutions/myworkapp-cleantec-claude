@@ -298,7 +298,21 @@ export default function OrdersPage() {
                           {order.status}
                         </Badge>
                       </TableCell>
-                      <TableCell>{order.totalRequiredQuantity || 0}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-0.5">
+                          <span data-testid={`text-order-qty-${order.id}`}>{order.totalRequiredQuantity || 0}</span>
+                          {["SHIPPED", "SHIPPED-PARTIAL", "RECEIVED", "RETURNED"].includes(order.status) && (
+                            <div className="flex gap-2 text-xs text-muted-foreground">
+                              <span className="text-purple-600 dark:text-purple-400" data-testid={`text-shipped-qty-${order.id}`}>
+                                S: {order.totalShippedQuantity || 0}
+                              </span>
+                              <span className="text-yellow-600 dark:text-yellow-400" data-testid={`text-returned-qty-${order.id}`}>
+                                R: {order.totalReturnedQuantity || 0}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell>
                         {order.shippedDate ? new Date(order.shippedDate).toLocaleDateString() : "-"}
                       </TableCell>
