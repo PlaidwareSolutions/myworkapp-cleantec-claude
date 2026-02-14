@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Search, FileText, Check, X, Truck, Download, Filter, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
+import { Plus, Search, FileText, Check, X, Truck, Download, Filter, ArrowDownToLine, ArrowUpFromLine, AlertTriangle } from "lucide-react";
 
 type StatusFilter = "ALL" | "INITIATED" | "APPROVED" | "SHIPPED" | "SHIPPED-PARTIAL" | "RECEIVED" | "RETURNED" | "CANCELLED";
 type TypeFilter = "ALL" | "INBOUND" | "OUTBOUND";
@@ -303,10 +303,16 @@ export default function OrdersPage() {
                           <span data-testid={`text-order-qty-${order.id}`}>{order.totalRequiredQuantity || 0}</span>
                           {["SHIPPED", "SHIPPED-PARTIAL", "RECEIVED", "RETURNED"].includes(order.status) && (
                             <div className="flex gap-2 text-xs text-muted-foreground">
-                              <span className="text-purple-600 dark:text-purple-400" data-testid={`text-shipped-qty-${order.id}`}>
+                              <span className={`flex items-center gap-0.5 ${(order.totalShippedQuantity || 0) !== (order.totalRequiredQuantity || 0) ? "text-red-600 dark:text-red-400" : "text-purple-600 dark:text-purple-400"}`} data-testid={`text-shipped-qty-${order.id}`}>
+                                {(order.totalShippedQuantity || 0) !== (order.totalRequiredQuantity || 0) && (
+                                  <AlertTriangle className="h-3 w-3" />
+                                )}
                                 S: {order.totalShippedQuantity || 0}
                               </span>
-                              <span className="text-yellow-600 dark:text-yellow-400" data-testid={`text-returned-qty-${order.id}`}>
+                              <span className={`flex items-center gap-0.5 ${(order.totalReturnedQuantity || 0) > 0 && (order.totalReturnedQuantity || 0) < (order.totalShippedQuantity || 0) ? "text-red-600 dark:text-red-400" : "text-yellow-600 dark:text-yellow-400"}`} data-testid={`text-returned-qty-${order.id}`}>
+                                {(order.totalReturnedQuantity || 0) > 0 && (order.totalReturnedQuantity || 0) < (order.totalShippedQuantity || 0) && (
+                                  <AlertTriangle className="h-3 w-3" />
+                                )}
                                 R: {order.totalReturnedQuantity || 0}
                               </span>
                             </div>
