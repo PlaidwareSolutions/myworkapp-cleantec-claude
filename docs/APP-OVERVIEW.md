@@ -132,10 +132,9 @@ Orders are editable based on their status:
 - `hierarchy_levels` / `hierarchy_nodes` - Organizational hierarchy with parent reference
 
 ## Environment Variables
-- `DATABASE_URL` - PostgreSQL connection string (auto-configured)
-- `SESSION_SECRET` - Session secret
+- `DATABASE_URL` - PostgreSQL connection string (required)
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` - Email config (optional)
-- `JWT_SECRET` - JWT signing secret (defaults to built-in)
+- `JWT_SECRET` - JWT signing secret (required in production)
 
 ## Running the Seed
 ```bash

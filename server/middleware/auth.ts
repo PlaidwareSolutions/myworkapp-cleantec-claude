@@ -3,6 +3,9 @@ import jwt from "jsonwebtoken";
 import { storage } from "../storage";
 import { ROLE_PERMISSIONS } from "@shared/schema";
 
+if (process.env.NODE_ENV === "production" && !process.env.JWT_SECRET) {
+  throw new Error("JWT_SECRET environment variable must be set in production");
+}
 const JWT_SECRET = process.env.JWT_SECRET || "cleantech-api-secret-key";
 
 export interface JWTPayload {

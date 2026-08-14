@@ -4,6 +4,8 @@ import { serveStatic } from "./static";
 import { createServer } from "http";
 
 const app = express();
+// Running behind reverse proxies (Railway, Cloudflare): trust X-Forwarded-* headers
+app.set("trust proxy", 1);
 const httpServer = createServer(app);
 
 declare module "http" {
@@ -94,7 +96,6 @@ app.use((req, res, next) => {
     {
       port,
       host: "0.0.0.0",
-      reusePort: true,
     },
     () => {
       log(`serving on port ${port}`);
