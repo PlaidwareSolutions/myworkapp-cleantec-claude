@@ -20,10 +20,20 @@ A comprehensive PostgreSQL-based API and frontend application for asset tracking
 ### Running the Application
 
 ```bash
+cp .env.example .env   # then fill in DATABASE_URL (and optionally JWT_SECRET/SMTP)
+npm install
+npm run db:push        # sync the Drizzle schema to your database
 npm run dev
 ```
 
 The application will be available at `http://localhost:5000`.
+
+### Production Build
+
+```bash
+npm run build   # client → dist/public, server → dist/index.cjs
+npm start
+```
 
 ### Login Credentials
 
@@ -125,7 +135,13 @@ npx tsx server/seed.ts
 
 ## Environment Variables
 
-- `DATABASE_URL` - PostgreSQL connection string (auto-configured on Replit)
-- `SESSION_SECRET` - Session secret
-- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` - Email config (optional)
-- `JWT_SECRET` - JWT signing secret (defaults to built-in)
+See [.env.example](.env.example) for the full list:
+
+- `DATABASE_URL` - PostgreSQL connection string (required)
+- `JWT_SECRET` - JWT signing secret (required in production)
+- `PORT` - Server port (defaults to 5000; injected by the platform in production)
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` - Email config (optional)
+
+## Deployment
+
+The app deploys to [Railway](https://railway.com) as a single Docker service (Express serves both the API and the built client) with a Railway PostgreSQL database, fronted by [Cloudflare](https://cloudflare.com) for DNS/CDN/TLS. See [MIGRATION.md](MIGRATION.md) for the full runbook.
