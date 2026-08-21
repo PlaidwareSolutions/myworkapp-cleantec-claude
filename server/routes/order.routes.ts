@@ -54,7 +54,9 @@ router.post(
         }
       }
 
-      const orderType = customer.type === "PROCESSOR" ? "INBOUND" : "OUTBOUND";
+      const orderType = req.body.type === "INBOUND" || req.body.type === "OUTBOUND"
+        ? req.body.type
+        : customer.type === "PROCESSOR" ? "INBOUND" : "OUTBOUND";
 
       const order = await storage.createOrder({
         poNumber: req.body.poNumber || "",
@@ -375,7 +377,7 @@ router.post("/:id/cancel", authenticateMiddleware, async (req: AuthenticatedRequ
     await storage.createOrderEvent({
       orderId: order.id,
       status: "CANCELLED",
-      comment: req.body.reason,
+      comment: req.body?.reason,
       createdBy: req.user!.id,
     });
 
