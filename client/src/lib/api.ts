@@ -103,7 +103,7 @@ export const contactsApi = {
     return api.get<PaginatedResponse<unknown>>(`/contact?${query}`);
   },
   get: (id: string) => api.get<ApiResponse<unknown>>(`/contact/${id}`),
-  create: (data: unknown) => api.post<ApiResponse<unknown>>("/contact", data),
+  create: (data: unknown) => api.post<ApiResponse<unknown>>("/contact/create", data),
   update: (id: string, data: unknown) => api.put<ApiResponse<unknown>>(`/contact/${id}`, data),
   createSystemUser: (contactId: string, data: unknown) => 
     api.post<ApiResponse<unknown>>(`/user/create-system-user/${contactId}`, data),
@@ -113,7 +113,7 @@ export const contactsApi = {
 
 export const rolesApi = {
   list: () => api.get<ApiResponse<unknown[]>>("/user/role"),
-  create: (data: unknown) => api.post<ApiResponse<unknown>>("/user/role", data),
+  create: (data: unknown) => api.post<ApiResponse<unknown>>("/user/role/create", data),
 };
 
 export const productsApi = {
@@ -124,7 +124,7 @@ export const productsApi = {
     return api.get<ApiResponse<unknown[]>>(`/entity/product?${query}`);
   },
   get: (id: string) => api.get<ApiResponse<unknown>>(`/entity/product/${id}`),
-  create: (data: unknown) => api.post<ApiResponse<unknown>>("/entity/product", data),
+  create: (data: unknown) => api.post<ApiResponse<unknown>>("/entity/product/create", data),
   update: (id: string, data: unknown) => api.put<ApiResponse<unknown>>(`/entity/product/${id}`, data),
   importAssets: (id: string, formData: FormData) => 
     api.upload<ApiResponse<unknown>>(`/entity/product/${id}/import`, formData),
@@ -138,7 +138,7 @@ export const tagsApi = {
     return api.get<PaginatedResponse<unknown>>(`/entity/tag?${query}`);
   },
   get: (id: string) => api.get<ApiResponse<unknown>>(`/entity/tag/${id}`),
-  create: (data: unknown) => api.post<ApiResponse<unknown>>("/entity/tag", data),
+  create: (data: unknown) => api.post<ApiResponse<unknown>>("/entity/tag/create", data),
   update: (id: string, data: unknown) => api.put<ApiResponse<unknown>>(`/entity/tag/${id}`, data),
   import: (formData: FormData) => api.upload<ApiResponse<unknown>>("/entity/tag/import", formData),
   search: (epc: string) => api.get<ApiResponse<unknown>>(`/entity/tag/search?epc=${epc}`),

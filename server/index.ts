@@ -64,6 +64,17 @@ app.use((req, res, next) => {
 (async () => {
   await registerRoutes(httpServer, app);
 
+  // Any /api or /v1 request reaching this point matched no route. Answer with
+  // JSON rather than falling through to the SPA catch-all in serveStatic, which
+  // would send index.html with a 200 and surface in the client as the misleading
+  // "Unexpected token '<', \"<!DOCTYPE \"... is not valid JSON".
+  app.use(["/api", "/v1"], (req: Request, res: Response) => {
+    res.status(404).json({
+      success: false,
+      message: `Cannot ${req.method} ${req.originalUrl}`,
+    });
+  });
+
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
