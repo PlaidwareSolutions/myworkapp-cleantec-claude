@@ -1,0 +1,20 @@
+{
+  "_comment": "Name resolution for the history backfill. Customer keys are workbook spellings; values are contact names in the system. Entries with create=true are inserted if absent.",
+  "createdByUsername": "kassif",
+  "productName": "RGBIN",
+  "carrier": { "name": "Unknown carrier (historical)", "create": true },
+  "customers": {
+    "Heritage Farms": { "name": "Heritage Farms LLC" },
+    "Duncan Family Farms": { "name": "Duncan Family Farms" },
+    "Watsonville Produce": { "name": "Watsonville Produce", "create": true, "type": "CUSTOMER" },
+    "Booth Ranches": { "name": "Booth Ranches", "create": true, "type": "CUSTOMER" },
+    "Rightline equip": { "name": "Rightline equip", "create": true, "type": "CUSTOMER" },
+    "Nevada Fresh Pak - Yerington": { "name": "Nevada Fresh Pak - Yerington" },
+    "State Garden": { "name": "State Garden" }
+  },
+  "warehouses": {
+    "Cleantec Corona": "Cleantec Corona",
+    "Cleantec Salinas": "Cleantec Salinas"
+  },
+  "missingTags": { "create": true, "customAttributes": { "labelVerified": false, "source": "backfill-2026-10" } }
+}
