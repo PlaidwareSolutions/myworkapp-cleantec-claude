@@ -181,9 +181,9 @@ export class DatabaseStorage implements IStorage {
     }
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-    const { limit, skip } = getPagination(pagination || {});
-    
-    const data = await db.select().from(contacts).where(whereClause).orderBy(desc(contacts.createdAt)).limit(limit).offset(skip);
+    // Contacts are master data; callers that do not ask for a page get the full list.
+    const base = db.select().from(contacts).where(whereClause).orderBy(desc(contacts.createdAt));
+    const data = pagination ? await (() => { const { limit, skip } = getPagination(pagination); return base.limit(limit).offset(skip); })() : await base;
     const [countResult] = await db.select({ count: count() }).from(contacts).where(whereClause);
     
     return { data, count: countResult?.count || 0 };

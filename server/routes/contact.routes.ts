@@ -39,10 +39,10 @@ router.get("", authenticateMiddleware, async (req: AuthenticatedRequest, res, ne
       filter.active = true;
     }
 
-    const pagination = {
-      page: parseInt(req.query.page as string) || 1,
-      limit: parseInt(req.query.limit as string) || 20,
-    };
+    // Only paginate when the caller asks for it; the contacts list and dropdowns need every record.
+    const pagination = req.query.page || req.query.limit
+      ? { page: parseInt(req.query.page as string) || 1, limit: parseInt(req.query.limit as string) || 20 }
+      : undefined;
 
     const result = await storage.getContacts(filter, pagination);
     
@@ -60,7 +60,7 @@ router.get("", authenticateMiddleware, async (req: AuthenticatedRequest, res, ne
       data = data.filter(c => c.type === "CARRIER" || c.id === req.user!.id);
     }
 
-    const paginationResult = getPagination(pagination);
+    const paginationResult = pagination ? getPagination(pagination) : { page: 1, limit: result.count, skip: 0 };
     res.json({ 
       success: true, 
       data, 
